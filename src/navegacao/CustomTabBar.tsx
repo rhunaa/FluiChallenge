@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { colors, gradients, shadow } from '../tema/tema';
+import { gradients, shadow } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 
 const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap; label: string }> = {
   Home: { active: 'home', inactive: 'home-outline', label: 'Início' },
@@ -16,6 +17,8 @@ const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: 
 };
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const insets = useSafeAreaInsets();
   const sideRoutes = state.routes.filter((r) => r.name !== 'Filters');
   const filtersIndex = state.routes.findIndex((r) => r.name === 'Filters');
@@ -49,7 +52,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         hitSlop={8}
       >
         <LinearGradient colors={gradients.fab} style={[styles.fab, filtersFocused && styles.fabActive]}>
-          <Ionicons name="flash" size={26} color={colors.textOnDark} />
+          <Ionicons name="flash" size={26} color={colors.onPrimary} />
         </LinearGradient>
       </Pressable>
     </View>
@@ -67,6 +70,8 @@ function TabButton({
   label: string;
   onPress: () => void;
 }) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const style = useAnimatedStyle(() => ({
     transform: [{ scale: withSpring(focused ? 1.08 : 1, { damping: 12 }) }],
   }));
@@ -90,7 +95,7 @@ function TabButton({
 const BAR_HEIGHT = 62;
 const FAB_SIZE = 58;
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   container: {
     position: 'absolute',
     left: 20,

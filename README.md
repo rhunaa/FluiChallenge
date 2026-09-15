@@ -7,8 +7,8 @@ App mobile para motoristas de veículos elétricos encontrarem, avaliarem e plan
 Pré-requisitos: [Node.js](https://nodejs.org) instalado (versão 18 ou mais recente).
 
 ```bash
-git clone https://github.com/rhunaa/ChallengeFlui.git
-cd ChallengeFlui
+git clone https://github.com/rhunaa/FluiChallenge.git
+cd FluiChallenge
 npm install
 ```
 

@@ -1,17 +1,23 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Texto as Text } from './Texto';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../tema/tema';
+import { radius, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { StatusEstacao } from '../tipos';
 
-const CONFIGURACAO_STATUS: Record<StatusEstacao, { label: string; color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> = {
+const criarConfiguracaoStatus = (
+  colors: ReturnType<typeof usarTema>['colors'],
+): Record<StatusEstacao, { label: string; color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> => ({
   available: { label: 'Disponível', color: colors.primaryDark, bg: colors.primaryLight, icon: 'checkmark-circle' },
   busy: { label: 'Ocupado', color: '#8A5A05', bg: colors.warningLight, icon: 'time' },
   offline: { label: 'Indisponível', color: colors.textSecondary, bg: colors.offlineLight, icon: 'close-circle' },
-};
+});
 
 export function SeloStatus({ status }: { status: StatusEstacao }) {
-  const config = CONFIGURACAO_STATUS[status];
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
+  const config = criarConfiguracaoStatus(colors)[status];
   return (
     <View
       style={[styles.badge, { backgroundColor: config.bg }]}
@@ -25,7 +31,7 @@ export function SeloStatus({ status }: { status: StatusEstacao }) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -39,5 +45,3 @@ const styles = StyleSheet.create({
     ...typography.small,
   },
 });
-
-export { CONFIGURACAO_STATUS };

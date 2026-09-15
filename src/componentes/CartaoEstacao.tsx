@@ -1,9 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Texto as Text } from './Texto';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { colors, gradients, radius, shadow, spacing, typography } from '../tema/tema';
+import { radius, shadow, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { Estacao } from '../tipos';
 import { SeloStatus } from './SeloStatus';
 import { usarFavoritos } from '../contexto/ContextoFavoritos';
@@ -15,6 +16,8 @@ interface CartaoEstacaoProps {
 }
 
 export function CartaoEstacao({ station, onPress, index = 0 }: CartaoEstacaoProps) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const { ehFavorito, alternarFavorito } = usarFavoritos();
   const saved = ehFavorito(station.id);
   const fastest = Math.max(...station.connectors.map((c) => c.powerKw));
@@ -30,9 +33,7 @@ export function CartaoEstacao({ station, onPress, index = 0 }: CartaoEstacaoProp
           accessibilityHint="Toque para ver a ficha completa do ponto de recarga"
         />
 
-        <LinearGradient colors={gradients.card} style={styles.thumb} pointerEvents="none">
-          <Ionicons name="flash" size={22} color={colors.onPrimary} />
-        </LinearGradient>
+        <Image source={{ uri: station.imageUrl }} style={styles.thumb} accessibilityIgnoresInvertColors />
 
         <View style={styles.info} pointerEvents="box-none">
           <View style={styles.titleRow}>
@@ -57,11 +58,11 @@ export function CartaoEstacao({ station, onPress, index = 0 }: CartaoEstacaoProp
             <SeloStatus status={station.status} />
             <View style={styles.metaChip}>
               <Ionicons name="flash-outline" size={12} color={colors.textSecondary} />
-              <Text style={styles.metaText}>{fastest} kW</Text>
+              <Text style={styles.metaText} allowFontScaling>{fastest} kW</Text>
             </View>
             <View style={styles.metaChip}>
               <Ionicons name="navigate-outline" size={12} color={colors.textSecondary} />
-              <Text style={styles.metaText}>{station.distanceKm} km</Text>
+              <Text style={styles.metaText} allowFontScaling>{station.distanceKm} km</Text>
             </View>
           </View>
         </View>
@@ -70,7 +71,7 @@ export function CartaoEstacao({ station, onPress, index = 0 }: CartaoEstacaoProp
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
@@ -89,9 +90,8 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: spacing.md,
+    backgroundColor: colors.surfaceMuted,
   },
   info: {
     flex: 1,

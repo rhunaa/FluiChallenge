@@ -1,9 +1,11 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Texto as Text } from './Texto';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { colors, gradients, radius, shadow, spacing, typography } from '../tema/tema';
+import { gradients, radius, shadow, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { Avaliacao, Estacao } from '../tipos';
 
 const MOOD_EMOJI = ['😖', '🙁', '😐', '🙂', '🤩'];
@@ -24,6 +26,8 @@ export function CartaoAvaliacao({
   index?: number;
   onPressStation?: () => void;
 }) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const avg = average(review.ratings);
   const topCategories = Object.entries(review.ratings)
     .sort((a, b) => b[1] - a[1])
@@ -51,7 +55,7 @@ export function CartaoAvaliacao({
             {station?.address}
           </Text>
         </View>
-        <Text style={styles.mood} accessibilityLabel={`Avaliação geral: ${avg.toFixed(1)} de 5`}>
+        <Text style={styles.mood} allowFontScaling accessibilityLabel={`Avaliação geral: ${avg.toFixed(1)} de 5`}>
           {MOOD_EMOJI[review.mood - 1]}
         </Text>
       </Pressable>
@@ -89,7 +93,7 @@ export function CartaoAvaliacao({
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

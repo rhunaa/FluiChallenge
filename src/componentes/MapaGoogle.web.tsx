@@ -9,9 +9,6 @@ interface MapaGoogleProps {
   onSelectStation: (id: string) => void;
 }
 
-// O react-native-maps não tem versão web, então o preview no navegador
-// continua usando o mapa estilizado (MapaEstilizado). No iOS/Android entra
-// o mapa real do Google Maps — veja MapaGoogle.native.tsx.
 export function MapaGoogle(props: MapaGoogleProps) {
   return <MapaEstilizado {...props} />;
 }

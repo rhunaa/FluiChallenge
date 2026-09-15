@@ -1,13 +1,17 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Texto as Text } from './Texto';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { colors, radius, spacing, typography } from '../tema/tema';
+import { radius, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { obterHorarioMenosMovimentado } from '../dados/estacoes';
 
 const CHART_HEIGHT = 64;
 const LABELED_HOURS = [0, 6, 12, 18, 23];
 
 export function GraficoOcupacao({ hourlyOccupancy }: { hourlyOccupancy: number[] }) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const quiet = obterHorarioMenosMovimentado(hourlyOccupancy);
 
   return (
@@ -52,7 +56,7 @@ export function GraficoOcupacao({ hourlyOccupancy }: { hourlyOccupancy: number[]
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   chartRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',

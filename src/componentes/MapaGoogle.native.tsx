@@ -2,7 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { Estacao } from '../tipos';
 
 interface MapaGoogleProps {
@@ -11,12 +11,6 @@ interface MapaGoogleProps {
   fadedIds: Set<string>;
   onSelectStation: (id: string) => void;
 }
-
-const STATUS_COLOR: Record<Estacao['status'], string> = {
-  available: colors.primary,
-  busy: colors.warning,
-  offline: colors.offline,
-};
 
 function regionFromStations(estacoes: Estacao[]): Region {
   const lats = estacoes.map((s) => s.lat);
@@ -34,10 +28,16 @@ function regionFromStations(estacoes: Estacao[]): Region {
   };
 }
 
-// Mapa real do Google Maps para iOS/Android. É preciso configurar a
-// GOOGLE_MAPS_API_KEY (veja .env.example) e gerar um build nativo (o Expo Go
-// não inclui esse módulo nativo) — na web, usa MapaGoogle.web.tsx.
+const STATUS_COLOR = (colors: ReturnType<typeof usarTema>['colors']): Record<Estacao['status'], string> => ({
+  available: colors.primary,
+  busy: colors.warning,
+  offline: colors.offline,
+});
+
 export function MapaGoogle({ estacoes, selectedId, fadedIds, onSelectStation }: MapaGoogleProps) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
+  const statusColor = STATUS_COLOR(colors);
   const mapRef = useRef<MapView>(null);
   const initialRegion = useMemo(() => regionFromStations(estacoes), [estacoes]);
 
@@ -69,7 +69,7 @@ export function MapaGoogle({ estacoes, selectedId, fadedIds, onSelectStation }: 
             <View
               style={[
                 styles.pin,
-                { backgroundColor: STATUS_COLOR[station.status] },
+                { backgroundColor: statusColor[station.status] },
                 selected && styles.pinSelected,
               ]}
             >
@@ -88,7 +88,7 @@ export function MapaGoogle({ estacoes, selectedId, fadedIds, onSelectStation }: 
 
 const PIN_SIZE = 32;
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   pin: {
     width: PIN_SIZE,
     height: PIN_SIZE,

@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Texto as Text } from '../componentes/Texto';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { colors, gradients, radius, spacing, typography } from '../tema/tema';
+import { gradients, radius, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { estacoes } from '../dados/estacoes';
 import { ROTULOS_CATEGORIA_AVALIACAO, CategoriasAvaliacao } from '../tipos';
 import { AvaliacaoEstrelas } from '../componentes/AvaliacaoEstrelas';
@@ -31,6 +33,8 @@ const MAX_COMMENT_LENGTH = 500;
 
 export default function TelaContarExperiencia() {
   const navigation = useNavigation<any>();
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const { adicionarAvaliacao } = usarAvaliacoes();
 
   const [query, setQuery] = useState('');
@@ -152,7 +156,7 @@ export default function TelaContarExperiencia() {
                 accessibilityLabel={m.label}
                 accessibilityState={{ selected: active }}
               >
-                <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                <Text style={styles.moodEmoji} allowFontScaling>{m.emoji}</Text>
               </Pressable>
             );
           })}
@@ -209,7 +213,7 @@ export default function TelaContarExperiencia() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -244,6 +248,9 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.lg,
     paddingBottom: 60,
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
   },
   sectionLabel: {
     ...typography.h3,

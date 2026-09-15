@@ -9,14 +9,8 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { colors } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { Estacao } from '../tipos';
-
-const STATUS_COLOR: Record<Estacao['status'], string> = {
-  available: colors.primary,
-  busy: colors.warning,
-  offline: colors.offline,
-};
 
 interface PinoMapaProps {
   station: Estacao;
@@ -26,6 +20,12 @@ interface PinoMapaProps {
 }
 
 export function PinoMapa({ station, selected, faded, onPress }: PinoMapaProps) {
+  const { colors } = usarTema();
+  const STATUS_COLOR: Record<Estacao['status'], string> = {
+    available: colors.primary,
+    busy: colors.warning,
+    offline: colors.offline,
+  };
   const pulse = useSharedValue(1);
   const pressScale = useSharedValue(1);
 

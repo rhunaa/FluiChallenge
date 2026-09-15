@@ -1,16 +1,26 @@
-import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { ImageBackground, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Texto as Text } from '../componentes/Texto';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { colors, gradients, radius, shadow, spacing, typography } from '../tema/tema';
-import { buscarEstacaoPorId } from '../dados/estacoes';
+import { gradients, radius, shadow, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
+import { buscarEstacaoPorId, obterMelhoresJanelas } from '../dados/estacoes';
+import { locaisProximosPorEstacao } from '../dados/locaisProximos';
 import { ROTULOS_COMODIDADE, ChaveComodidade } from '../tipos';
 import { SeloStatus } from '../componentes/SeloStatus';
 import { GraficoOcupacao } from '../componentes/GraficoOcupacao';
+import { CartaoLocalProximo } from '../componentes/CartaoLocalProximo';
+import { Chip } from '../componentes/Chip';
 import { usarFavoritos } from '../contexto/ContextoFavoritos';
+import { usarReservas } from '../contexto/ContextoReservas';
+
+function formatarHora(h: number): string {
+  return `${String(h).padStart(2, '0')}h`;
+}
 
 const AMENITY_ICONS: Record<ChaveComodidade, keyof typeof Ionicons.glyphMap> = {
   wifi: 'wifi-outline',
@@ -24,9 +34,16 @@ const AMENITY_ICONS: Record<ChaveComodidade, keyof typeof Ionicons.glyphMap> = {
 export default function TelaDetalhesEstacao() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const { ehFavorito, alternarFavorito } = usarFavoritos();
+  const { reservaDaEstacao, criarReserva, cancelarReserva } = usarReservas();
   const station = buscarEstacaoPorId(route.params?.stationId);
   const saved = station ? ehFavorito(station.id) : false;
+  const locaisProximos = station ? locaisProximosPorEstacao[station.id] ?? [] : [];
+  const reserva = station ? reservaDaEstacao(station.id) : undefined;
+  const janelas = station ? obterMelhoresJanelas(station.hourlyOccupancy) : [];
+  const [janelaSelecionada, setJanelaSelecionada] = useState<number | null>(null);
 
   if (!station) {
     return (
@@ -41,7 +58,8 @@ export default function TelaDetalhesEstacao() {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        <LinearGradient colors={gradients.hero} style={styles.hero}>
+        <ImageBackground source={{ uri: station.imageUrl }} style={styles.hero} imageStyle={styles.heroImage}>
+          <LinearGradient colors={gradients.hero} style={styles.heroOverlay} />
           <SafeAreaView edges={['top']} style={styles.heroSafe}>
             <View style={styles.heroTopRow}>
               <Pressable
@@ -74,16 +92,16 @@ export default function TelaDetalhesEstacao() {
                 <SeloStatus status={station.status} />
                 <View style={styles.heroMetaChip}>
                   <Ionicons name="navigate" size={12} color={colors.onPrimary} />
-                  <Text style={styles.heroMetaText}>{station.distanceKm} km</Text>
+                  <Text style={styles.heroMetaText} allowFontScaling>{station.distanceKm} km</Text>
                 </View>
                 <View style={styles.heroMetaChip}>
                   <Ionicons name="star" size={12} color={colors.onPrimary} />
-                  <Text style={styles.heroMetaText}>{station.rating.toFixed(1)}</Text>
+                  <Text style={styles.heroMetaText} allowFontScaling>{station.rating.toFixed(1)}</Text>
                 </View>
               </View>
             </Animated.View>
           </SafeAreaView>
-        </LinearGradient>
+        </ImageBackground>
 
         <View style={styles.sheet}>
           <Animated.View entering={FadeInUp.delay(80).springify().damping(16)}>
@@ -115,6 +133,67 @@ export default function TelaDetalhesEstacao() {
             <GraficoOcupacao hourlyOccupancy={station.hourlyOccupancy} />
           </Animated.View>
 
+          <Animated.View entering={FadeInUp.delay(170).springify().damping(16)} style={styles.section}>
+            <Text style={styles.sectionTitle} accessibilityRole="header" allowFontScaling>
+              Reservar horário de recarga
+            </Text>
+            {reserva ? (
+              <View style={styles.reservaAtivaCard}>
+                <View style={styles.reservaAtivaIcon}>
+                  <Ionicons name="calendar" size={18} color={colors.onPrimary} />
+                </View>
+                <View style={styles.reservaAtivaInfo}>
+                  <Text style={styles.reservaAtivaTitle} allowFontScaling>
+                    Reserva confirmada
+                  </Text>
+                  <Text style={styles.reservaAtivaSubtitle} allowFontScaling>
+                    {formatarHora(reserva.startHour)} – {formatarHora(reserva.endHour)}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => cancelarReserva(station.id)}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancelar reserva"
+                >
+                  <Ionicons name="close-circle-outline" size={22} color={colors.textSecondary} />
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.reservaHelper} allowFontScaling>
+                  Escolha um horário de baixo movimento e garanta sua vaga
+                </Text>
+                <View style={styles.reservaChipsRow}>
+                  {janelas.map((janela) => (
+                    <Chip
+                      key={janela.start}
+                      label={`${formatarHora(janela.start)} – ${formatarHora(janela.end)}`}
+                      selected={janelaSelecionada === janela.start}
+                      onPress={() => setJanelaSelecionada(janela.start)}
+                    />
+                  ))}
+                </View>
+                <Pressable
+                  onPress={() => {
+                    const janela = janelas.find((j) => j.start === janelaSelecionada);
+                    if (janela) criarReserva(station.id, janela.start, janela.end);
+                  }}
+                  disabled={janelaSelecionada === null}
+                  style={[styles.reservaConfirmarButton, janelaSelecionada === null && styles.reservaConfirmarButtonDisabled]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Confirmar reserva de horário"
+                  accessibilityState={{ disabled: janelaSelecionada === null }}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.onPrimary} />
+                  <Text style={styles.reservaConfirmarText} allowFontScaling>
+                    Confirmar reserva
+                  </Text>
+                </Pressable>
+              </>
+            )}
+          </Animated.View>
+
           <Animated.View entering={FadeInUp.delay(200).springify().damping(16)} style={styles.section}>
             <Text style={styles.sectionTitle} accessibilityRole="header" allowFontScaling>
               Horário de funcionamento
@@ -127,7 +206,24 @@ export default function TelaDetalhesEstacao() {
             </View>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.delay(260).springify().damping(16)} style={styles.section}>
+          {locaisProximos.length > 0 && (
+            <Animated.View entering={FadeInUp.delay(260).springify().damping(16)} style={styles.section}>
+              <Text style={styles.sectionTitle} accessibilityRole="header" allowFontScaling>
+                Enquanto você espera
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.esperaRow}
+              >
+                {locaisProximos.map((local, i) => (
+                  <CartaoLocalProximo key={local.id} local={local} index={i} />
+                ))}
+              </ScrollView>
+            </Animated.View>
+          )}
+
+          <Animated.View entering={FadeInUp.delay(320).springify().damping(16)} style={styles.section}>
             <Text style={styles.sectionTitle} accessibilityRole="header" allowFontScaling>
               Comodidades próximas
             </Text>
@@ -147,7 +243,7 @@ export default function TelaDetalhesEstacao() {
 
       <View style={[styles.ctaBar, shadow.floating]}>
         <Pressable
-          onPress={() => Alert.alert('Navegação', `Rota até ${station.name} será aberta no app de mapas do dispositivo.`)}
+          onPress={() => navigation.navigate('Tabs', { screen: 'Map', params: { focusStationId: station.id } })}
           style={styles.ctaButton}
           accessibilityRole="button"
           accessibilityLabel={`Iniciar navegação até ${station.name}`}
@@ -162,7 +258,7 @@ export default function TelaDetalhesEstacao() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
@@ -180,6 +276,20 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
     borderBottomLeftRadius: radius.xl,
     borderBottomRightRadius: radius.xl,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceMuted,
+  },
+  heroImage: {
+    borderBottomLeftRadius: radius.xl,
+    borderBottomRightRadius: radius.xl,
+  },
+  heroOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.82,
   },
   heroSafe: {
     paddingHorizontal: spacing.lg,
@@ -241,6 +351,60 @@ const styles = StyleSheet.create({
     ...typography.h3,
     color: colors.textOnDark,
     marginBottom: spacing.md,
+  },
+  esperaRow: {
+    paddingRight: spacing.lg,
+  },
+  reservaHelper: {
+    ...typography.caption,
+    marginBottom: spacing.md,
+  },
+  reservaChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  reservaConfirmarButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.md,
+    marginTop: spacing.xs,
+  },
+  reservaConfirmarButtonDisabled: {
+    backgroundColor: colors.offline,
+  },
+  reservaConfirmarText: {
+    ...typography.bodyMedium,
+    color: colors.onPrimary,
+  },
+  reservaAtivaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  reservaAtivaIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  reservaAtivaInfo: {
+    flex: 1,
+  },
+  reservaAtivaTitle: {
+    ...typography.bodyMedium,
+  },
+  reservaAtivaSubtitle: {
+    ...typography.caption,
+    marginTop: 2,
   },
   connectorRow: {
     flexDirection: 'row',

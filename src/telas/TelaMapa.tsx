@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Texto as Text } from '../componentes/Texto';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { colors, radius, shadow, spacing, typography } from '../tema/tema';
+import { radius, shadow, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { estacoes } from '../dados/estacoes';
 import { MapaGoogle } from '../componentes/MapaGoogle';
 import { CartaoPreviaEstacao } from '../componentes/CartaoPreviaEstacao';
@@ -15,16 +17,26 @@ import { aplicarFiltros, contarFiltrosAtivos } from '../utilitarios/filtrarEstac
 export default function TelaMapa() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const { filters } = usarFiltros();
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(route.params?.focusStationId ?? null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 650);
     return () => clearTimeout(t);
   }, []);
 
-  const visibleStations = useMemo(() => aplicarFiltros(estacoes, filters), [filters]);
+  const visibleStations = useMemo(() => {
+    const filtered = aplicarFiltros(estacoes, filters);
+    const q = query.trim().toLowerCase();
+    if (!q) return filtered;
+    return filtered.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q),
+    );
+  }, [filters, query]);
   const visibleIds = useMemo(() => new Set(visibleStations.map((s) => s.id)), [visibleStations]);
   const fadedIds = useMemo(
     () => new Set(estacoes.filter((s) => !visibleIds.has(s.id)).map((s) => s.id)),
@@ -52,9 +64,27 @@ export default function TelaMapa() {
         <Animated.View entering={FadeIn.delay(150)} style={styles.searchRow}>
           <View style={[styles.searchBar, shadow.card]}>
             <Ionicons name="search" size={18} color={colors.textMuted} />
-            <Text style={styles.searchPlaceholder} allowFontScaling>
-              Buscar postos, endereços...
-            </Text>
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Buscar postos, endereços..."
+              placeholderTextColor={colors.textMuted}
+              style={styles.searchInput}
+              allowFontScaling
+              accessibilityLabel="Buscar postos por nome ou endereço"
+              returnKeyType="search"
+              autoCorrect={false}
+            />
+            {query.length > 0 && (
+              <Pressable
+                onPress={() => setQuery('')}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Limpar busca"
+              >
+                <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+              </Pressable>
+            )}
           </View>
           <Pressable
             onPress={() => navigation.navigate('Filters')}
@@ -65,7 +95,7 @@ export default function TelaMapa() {
             <Ionicons name="options" size={18} color={activeFilterCount > 0 ? colors.onPrimary : colors.primary} />
             {activeFilterCount > 0 && (
               <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                <Text style={styles.filterBadgeText} allowFontScaling>{activeFilterCount}</Text>
               </View>
             )}
           </Pressable>
@@ -90,7 +120,7 @@ export default function TelaMapa() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.mapBase,
@@ -121,9 +151,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     height: 48,
   },
-  searchPlaceholder: {
+  searchInput: {
     ...typography.body,
-    color: colors.textMuted,
+    color: colors.textPrimary,
+    flex: 1,
+    height: '100%',
   },
   filterButton: {
     width: 48,

@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Texto as Text } from '../componentes/Texto';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { colors, gradients, radius, spacing, typography } from '../tema/tema';
+import { gradients, radius, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { estacoes } from '../dados/estacoes';
 import { ROTULOS_COMODIDADE, ChaveComodidade, TipoConector } from '../tipos';
 import { Chip } from '../componentes/Chip';
@@ -28,6 +30,8 @@ const OBJECTIVES = [
 
 export default function TelaFiltros() {
   const navigation = useNavigation<any>();
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const { filters, setFilters, resetarFiltros } = usarFiltros();
   const [objective, setObjective] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -104,7 +108,12 @@ export default function TelaFiltros() {
           </View>
 
           {analyzing && (
-            <Animated.View entering={FadeIn} style={styles.analyzingCard}>
+            <Animated.View
+              entering={FadeIn}
+              style={styles.analyzingCard}
+              accessibilityLiveRegion="polite"
+              accessibilityLabel="Atualizando resultados"
+            >
               <Ionicons name="options" size={16} color={colors.onPrimary} />
               <Text style={styles.analyzingText} allowFontScaling>
                 Atualizando resultados...
@@ -169,7 +178,7 @@ export default function TelaFiltros() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -212,6 +221,9 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.lg,
     paddingBottom: 140,
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
   },
   resultsHeader: {
     flexDirection: 'row',

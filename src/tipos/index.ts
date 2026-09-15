@@ -28,8 +28,9 @@ export interface Estacao {
   address: string;
   distanceKm: number;
   status: StatusEstacao;
-  x: number; // posição 0-1 na tela estilizada do mapa
-  y: number; // posição 0-1 na tela estilizada do mapa
+  imageUrl: string;
+  x: number;
+  y: number;
   lat: number;
   lng: number;
   connectors: Conector[];
@@ -37,7 +38,6 @@ export interface Estacao {
   openHours: string;
   is24h: boolean;
   rating: number;
-  /** taxa de ocupação de 0 a 1 para cada hora do dia, usada para calcular o "menor movimento" */
   hourlyOccupancy: number[];
 }
 
@@ -60,7 +60,7 @@ export interface Avaliacao {
   id: string;
   stationId: string;
   authorName: string;
-  mood: number; // 1 a 5
+  mood: number;
   ratings: CategoriasAvaliacao;
   comment: string;
   createdAt: string;
@@ -75,6 +75,16 @@ export const ROTULOS_CATEGORIA_AVALIACAO: Record<keyof CategoriasAvaliacao, { la
   value: { label: 'Preço / Custo-benefício', hint: 'O preço cobrado valeu a pena?' },
 };
 
+export interface SessaoRecarga {
+  id: string;
+  stationId: string;
+  connectorType: TipoConector;
+  date: string;
+  durationMin: number;
+  energyKwh: number;
+  cost: number;
+}
+
 export const ROTULOS_COMODIDADE: Record<ChaveComodidade, string> = {
   wifi: 'Wi-Fi',
   cafe: 'Café',
@@ -83,3 +93,14 @@ export const ROTULOS_COMODIDADE: Record<ChaveComodidade, string> = {
   food: 'Praça de alimentação',
   parking: 'Estacionamento',
 };
+
+export type CategoriaLocalProximo = 'cafe' | 'food' | 'shopping';
+
+export interface LocalProximo {
+  id: string;
+  name: string;
+  category: CategoriaLocalProximo;
+  walkMin: number;
+  rating: number;
+  imageUrl: string;
+}

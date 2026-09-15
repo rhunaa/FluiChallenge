@@ -1,8 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Texto as Text } from './Texto';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { colors, radius, shadow, spacing, typography } from '../tema/tema';
+import { radius, shadow, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 
 interface AcaoRapidaProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -13,6 +15,8 @@ interface AcaoRapidaProps {
 }
 
 export function AcaoRapida({ icon, label, onPress, selected, accessibilityHint }: AcaoRapidaProps) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const scale = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -48,7 +52,7 @@ export function AcaoRapida({ icon, label, onPress, selected, accessibilityHint }
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     width: 76,

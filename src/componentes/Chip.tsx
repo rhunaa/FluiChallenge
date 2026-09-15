@@ -1,7 +1,9 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
+import { Texto as Text } from './Texto';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { colors, radius, spacing, typography } from '../tema/tema';
+import { radius, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 
 interface ChipProps {
   label: string;
@@ -13,6 +15,8 @@ interface ChipProps {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function Chip({ label, selected, onPress, accessibilityHint }: ChipProps) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const scale = useSharedValue(1);
 
   const style = useAnimatedStyle(() => ({
@@ -41,7 +45,7 @@ export function Chip({ label, selected, onPress, accessibilityHint }: ChipProps)
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   chip: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,

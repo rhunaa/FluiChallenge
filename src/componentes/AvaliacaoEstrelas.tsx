@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 
 interface AvaliacaoEstrelasProps {
   value: number;
@@ -11,6 +11,7 @@ interface AvaliacaoEstrelasProps {
 }
 
 export function AvaliacaoEstrelas({ value, onChange, size = 22, label = 'avaliação' }: AvaliacaoEstrelasProps) {
+  const { colors } = usarTema();
   const interactive = !!onChange;
   const stars = [1, 2, 3, 4, 5];
 

@@ -11,4 +11,5 @@ export type RootStackParamList = {
   StationDetail: { stationId: string };
   ReportExperience: undefined;
   Accessibility: undefined;
+  TripPlanner: undefined;
 };

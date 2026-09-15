@@ -5,6 +5,7 @@ import { TabNavigator } from './TabNavigator';
 import TelaDetalhesEstacao from '../telas/TelaDetalhesEstacao';
 import TelaContarExperiencia from '../telas/TelaContarExperiencia';
 import TelaAcessibilidade from '../telas/TelaAcessibilidade';
+import TelaPlanejadorViagem from '../telas/TelaPlanejadorViagem';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -25,6 +26,11 @@ export function RootNavigator() {
       <Stack.Screen
         name="Accessibility"
         component={TelaAcessibilidade}
+        options={{ presentation: 'card', animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="TripPlanner"
+        component={TelaPlanejadorViagem}
         options={{ presentation: 'card', animation: 'slide_from_right' }}
       />
     </Stack.Navigator>

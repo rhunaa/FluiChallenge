@@ -1,9 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Texto as Text } from './Texto';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
-import { colors, gradients, radius, shadow, spacing, typography } from '../tema/tema';
+import { radius, shadow, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { Estacao } from '../tipos';
 import { SeloStatus } from './SeloStatus';
 
@@ -14,6 +15,8 @@ interface CartaoPreviaEstacaoProps {
 }
 
 export function CartaoPreviaEstacao({ station, onClose, onViewDetails }: CartaoPreviaEstacaoProps) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const fastest = Math.max(...station.connectors.map((c) => c.powerKw));
 
   return (
@@ -33,9 +36,7 @@ export function CartaoPreviaEstacao({ station, onClose, onViewDetails }: CartaoP
       </Pressable>
 
       <View style={styles.row}>
-        <LinearGradient colors={gradients.card} style={styles.thumb}>
-          <Ionicons name="flash" size={20} color={colors.onPrimary} />
-        </LinearGradient>
+        <Image source={{ uri: station.imageUrl }} style={styles.thumb} accessibilityIgnoresInvertColors />
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1} allowFontScaling>
             {station.name}
@@ -67,7 +68,7 @@ export function CartaoPreviaEstacao({ station, onClose, onViewDetails }: CartaoP
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   card: {
     position: 'absolute',
     left: spacing.lg,
@@ -97,9 +98,8 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: spacing.md,
+    backgroundColor: colors.surfaceMuted,
   },
   info: {
     flex: 1,

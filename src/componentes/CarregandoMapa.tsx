@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Texto as Text } from './Texto';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useAnimatedStyle,
@@ -8,9 +9,12 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { colors, spacing, typography } from '../tema/tema';
+import { spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 
 export function CarregandoMapa({ label = 'Carregando pontos de recarga...' }: { label?: string }) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const rotate = useSharedValue(0);
   const pulse = useSharedValue(1);
 
@@ -41,7 +45,7 @@ export function CarregandoMapa({ label = 'Carregando pontos de recarga...' }: { 
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',

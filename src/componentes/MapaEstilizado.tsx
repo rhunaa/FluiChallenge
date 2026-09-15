@@ -7,7 +7,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { colors } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { Estacao } from '../tipos';
 import { PinoMapa } from './PinoMapa';
 
@@ -24,10 +24,9 @@ interface MapaEstilizadoProps {
   onSelectStation: (id: string) => void;
 }
 
-// OBS: esta é a superfície estilizada (com pan/zoom) usada como alternativa
-// ao mapa real na versão web — o mapa nativo de verdade (Google Maps) fica
-// em MapaGoogle.native.tsx, já usando os mesmos lat/lng das estações.
 export function MapaEstilizado({ estacoes, selectedId, fadedIds, onSelectStation }: MapaEstilizadoProps) {
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const translateX = useSharedValue(-(CANVAS_W - SCREEN_W) / 2);
   const translateY = useSharedValue(-(CANVAS_H - SCREEN_H) / 2.4);
   const scale = useSharedValue(1);
@@ -94,6 +93,7 @@ export function MapaEstilizado({ estacoes, selectedId, fadedIds, onSelectStation
 }
 
 function RoadNetwork() {
+  const { colors } = usarTema();
   const verticalRoads = [0.12, 0.3, 0.5, 0.7, 0.88];
   const horizontalRoads = [0.15, 0.35, 0.55, 0.72, 0.9];
 
@@ -131,7 +131,7 @@ function RoadNetwork() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   viewport: {
     flex: 1,
     overflow: 'hidden',

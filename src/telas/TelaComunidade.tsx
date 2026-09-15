@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Texto as Text } from '../componentes/Texto';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { colors, gradients, radius, spacing, typography } from '../tema/tema';
+import { gradients, radius, spacing, typography } from '../tema/tema';
+import { usarTema } from '../contexto/ContextoTema';
 import { buscarEstacaoPorId } from '../dados/estacoes';
 import { usarAvaliacoes } from '../contexto/ContextoAvaliacoes';
 import { CartaoAvaliacao } from '../componentes/CartaoAvaliacao';
@@ -17,6 +19,8 @@ const TABS = [
 
 export default function TelaComunidade() {
   const navigation = useNavigation<any>();
+  const { colors } = usarTema();
+  const styles = criarEstilos(colors);
   const { reviews } = usarAvaliacoes();
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('feed');
 
@@ -42,6 +46,7 @@ export default function TelaComunidade() {
                   onPress={() => setTab(t.key)}
                   style={[styles.tab, active && styles.tabActive]}
                   accessibilityRole="tab"
+                  accessibilityLabel={t.label}
                   accessibilityState={{ selected: active }}
                 >
                   <Text style={[styles.tabText, active && styles.tabTextActive]} allowFontScaling>
@@ -94,7 +99,7 @@ export default function TelaComunidade() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -165,6 +170,9 @@ const styles = StyleSheet.create({
   list: {
     padding: spacing.lg,
     paddingBottom: 140,
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
   },
   emptyState: {
     alignItems: 'center',
