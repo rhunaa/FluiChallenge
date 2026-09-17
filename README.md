@@ -1,11 +1,20 @@
 # Flui
 
-App mobile para motoristas de veículos elétricos encontrarem, avaliarem e planejarem paradas em pontos de recarga. Feito em React Native (Expo) com TypeScript, como projeto do Enterprise Challenge: Charge Map Cup.
+App mobile para motoristas de veículos elétricos encontrarem, avaliarem e planejarem paradas em pontos de recarga. Feito em React Native (Expo) com TypeScript.
+
+Projeto do **Enterprise Challenge: Charge Map Cup** — Etapa 3 (entrega final).
+
+**Integrantes:** Bruna Pereira Cordeiro (RM563153), Lucas Buzato (RM562332)
+
+**Vídeo-pitch:** _[a adicionar]_
 
 ## Funcionalidades
 
+### Login & Cadastro
+Tela de entrada do app com login (e-mail e senha) e cadastro de conta nova (nome, e-mail, modelo do carro opcional e senha), com validação de campos. Enquanto não há login, nenhuma outra tela do app fica acessível.
+
 ### Início
-Tela inicial com atalho para o mapa, botão de destaque para o Planejador de viagem, aviso de reserva de horário ativa (quando houver) e uma lista dos postos disponíveis em destaque, cada um com foto real do carregador.
+Atalho para o mapa, botão de destaque para o Planejador de viagem, aviso de reserva de horário ativa (quando houver) e uma lista dos postos disponíveis em destaque, cada um com foto real do carregador. Saudação com o primeiro nome de quem está logado.
 
 ### Mapa
 Busca de postos por nome ou endereço, contador de quantos pontos estão visíveis e filtros ativos, prévia do posto ao tocar num marcador. No navegador o mapa aparece numa versão estilizada (com pan e zoom); em um build nativo (Android/iOS) usa o Google Maps real, com os mesmos marcadores nas coordenadas reais das estações.
@@ -23,10 +32,27 @@ Duas abas: postos salvos como favoritos, e histórico de recargas já realizadas
 Feed de avaliações deixadas por outros usuários sobre os postos, com aba separada para ver só os próprios feedbacks. Cada avaliação tem nota por categoria (disponibilidade, fila, velocidade, conforto, preço) e comentário livre, registrados na tela "Contar experiência".
 
 ### Planejador de viagem
-Escolha de destino (com busca por nome/endereço) e da autonomia restante do carro. A partir disso, calcula automaticamente as paradas de recarga necessárias no caminho — usando a mesma estratégia gulosa clássica de minimizar paradas —, mostra resumo da viagem (distância total, número de paradas, tempo estimado), potência de cada carregador no trajeto, e um botão "Iniciar viagem" que leva direto ao mapa focado na primeira parada.
+Busca do destino com sugestões (como uma busca de verdade, não só uma lista fixa) e escolha da autonomia restante do carro. A partir disso, calcula automaticamente as paradas de recarga necessárias no caminho — usando a mesma estratégia gulosa clássica de minimizar paradas —, mostra resumo da viagem (distância total, número de paradas, tempo estimado), potência de cada carregador no trajeto, e um botão "Iniciar viagem" que leva direto ao mapa.
+
+### Perfil
+Nome, e-mail, resumo de uso (recargas, kWh, gasto total) e veículo cadastrado de quem está logado, com opção de sair da conta.
 
 ### Acessibilidade
-Tela de perfil com dois controles: aumentar o tamanho do texto do app (três níveis) e alternar entre modo claro e escuro. Ambos os controles são reativos em todo o app — não só nessa tela.
+Tela dedicada com dois controles reativos em todo o app: aumentar/diminuir o tamanho do texto (com limites nas duas pontas) e alternar entre modo claro e escuro.
+
+## Motion design
+
+Transições e animações aplicadas em toda a navegação: entrada escalonada de listas e cards (fade + slide), spring em botões e seleção de abas, feedback de carregamento animado no mapa, e microinterações em toques (escala, opacidade) nos componentes interativos — usando `react-native-reanimated`.
+
+## Responsividade e acessibilidade
+
+- **Contraste**: paleta clara e escura com tokens de cor dedicados para texto sobre fundo sólido vs. sobre o gradiente roxo, garantindo contraste correto nos dois temas.
+- **Escala de fonte**: controle próprio de tamanho de texto (3 níveis) combinado com `allowFontScaling`, testado sem quebrar layouts.
+- **Rótulos e dicas**: `accessibilityRole`, `accessibilityLabel` e `accessibilityHint` em botões, campos e cards em todas as telas.
+- **Regiões dinâmicas**: `accessibilityLiveRegion` em conteúdo que muda sozinho (ex: resultados de filtro sendo recalculados).
+- **Redundância de status**: disponibilidade de posto/conector sempre indicada por cor + ícone + texto, nunca só por cor.
+- **Áreas de toque**: `hitSlop` em ícones pequenos e alvos de toque com tamanho mínimo confortável.
+- **Layout responsivo**: conteúdo com largura máxima e centralizado em telas maiores (tablet), testado nos dois formatos.
 
 ## Como abrir o projeto
 
@@ -93,17 +119,19 @@ Baixe e instale o `.apk` no celular Android (ou o build de iOS no seu dispositiv
 
 ## Sobre os dados
 
-Todos os postos, avaliações, histórico de recargas e sugestões de locais próximos são dados simulados (mock), criados para demonstrar o funcionamento completo do app. Não há backend nem integração real com um provedor de dados de estações de recarga.
+Todos os postos, avaliações, histórico de recargas, sugestões de locais próximos e login/cadastro são simulados (mock), criados para demonstrar o funcionamento completo do app. Não há backend nem integração real com um provedor de dados de estações de recarga.
 
 ## Estrutura do projeto
 
 ```
 src/
-  telas/         → cada tela do app (Início, Mapa, Ficha do posto, Filtros, Favoritos,
-                    Comunidade, Contar experiência, Planejador de viagem, Acessibilidade)
+  telas/         → cada tela do app (Login, Cadastro, Início, Mapa, Ficha do posto, Filtros,
+                    Favoritos, Comunidade, Contar experiência, Planejador de viagem, Perfil,
+                    Acessibilidade)
   componentes/    → componentes reutilizáveis de UI
   navegacao/      → configuração de navegação entre telas
-  contexto/       → estado compartilhado (tema, favoritos, filtros, avaliações, reservas)
+  contexto/       → estado compartilhado (autenticação, tema, favoritos, filtros,
+                    avaliações, reservas)
   dados/          → dados simulados: estações, avaliações, histórico, locais próximos,
                     algoritmo do planejador de rota
   tema/           → cores, espaçamentos e tipografia do app
