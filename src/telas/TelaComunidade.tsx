@@ -112,12 +112,12 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
   },
   title: {
     ...typography.h1,
-    color: colors.textOnDark,
+    color: colors.textOnGradient,
     marginTop: spacing.sm,
   },
   subtitle: {
     ...typography.body,
-    color: colors.textOnDarkMuted,
+    color: colors.textOnGradientMuted,
     marginTop: 2,
     marginBottom: spacing.lg,
   },
@@ -139,7 +139,7 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
   },
   tabText: {
     ...typography.caption,
-    color: colors.textOnDarkMuted,
+    color: colors.textOnGradientMuted,
     fontWeight: '700',
   },
   tabTextActive: {

@@ -4,6 +4,7 @@ export type TabParamList = {
   Filters: undefined;
   Favorites: undefined;
   Community: undefined;
+  Profile: undefined;
 };
 
 export type RootStackParamList = {
@@ -12,4 +13,6 @@ export type RootStackParamList = {
   ReportExperience: undefined;
   Accessibility: undefined;
   TripPlanner: undefined;
+  Login: undefined;
+  Cadastro: undefined;
 };

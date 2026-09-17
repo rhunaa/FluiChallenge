@@ -72,6 +72,6 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
   label: {
     ...typography.small,
     textAlign: 'center',
-    color: colors.textOnDarkMuted,
+    color: colors.textOnGradientMuted,
   },
 });

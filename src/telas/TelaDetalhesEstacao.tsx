@@ -243,10 +243,10 @@ export default function TelaDetalhesEstacao() {
 
       <View style={[styles.ctaBar, shadow.floating]}>
         <Pressable
-          onPress={() => navigation.navigate('Tabs', { screen: 'Map', params: { focusStationId: station.id } })}
+          onPress={() => navigation.navigate('Tabs', { screen: 'Map' })}
           style={styles.ctaButton}
           accessibilityRole="button"
-          accessibilityLabel={`Iniciar navegação até ${station.name}`}
+          accessibilityLabel="Iniciar navegação"
         >
           <Ionicons name="navigate" size={18} color={colors.onPrimary} />
           <Text style={styles.ctaText} allowFontScaling>
@@ -309,11 +309,11 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
   },
   stationName: {
     ...typography.h1,
-    color: colors.textOnDark,
+    color: colors.textOnGradient,
   },
   stationAddress: {
     ...typography.body,
-    color: colors.textOnDarkMuted,
+    color: colors.textOnGradientMuted,
     marginTop: 4,
   },
   heroMetaRow: {
@@ -334,7 +334,7 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
   },
   heroMetaText: {
     ...typography.small,
-    color: colors.textOnDark,
+    color: colors.textOnGradient,
   },
   sheet: {
     backgroundColor: colors.background,

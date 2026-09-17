@@ -7,6 +7,7 @@ import TelaMapa from '../telas/TelaMapa';
 import TelaFiltros from '../telas/TelaFiltros';
 import TelaFavoritos from '../telas/TelaFavoritos';
 import TelaComunidade from '../telas/TelaComunidade';
+import TelaPerfil from '../telas/TelaPerfil';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -21,6 +22,7 @@ export function TabNavigator() {
       <Tab.Screen name="Filters" component={TelaFiltros} />
       <Tab.Screen name="Favorites" component={TelaFavoritos} />
       <Tab.Screen name="Community" component={TelaComunidade} />
+      <Tab.Screen name="Profile" component={TelaPerfil} />
     </Tab.Navigator>
   );
 }

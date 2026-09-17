@@ -87,41 +87,71 @@ export default function TelaPlanejadorViagem() {
           <Text style={styles.sectionTitle} accessibilityRole="header" allowFontScaling>
             Para onde você vai?
           </Text>
-          <View style={[styles.searchBar, shadow.card]}>
-            <Ionicons name="search" size={18} color={colors.textMuted} />
-            <TextInput
-              value={busca}
-              onChangeText={setBusca}
-              placeholder="Buscar posto por nome ou endereço..."
-              placeholderTextColor={colors.textMuted}
-              style={styles.searchInput}
-              allowFontScaling
-              accessibilityLabel="Buscar posto de destino por nome ou endereço"
-              returnKeyType="search"
-              autoCorrect={false}
-            />
-            {busca.length > 0 && (
+          {destino ? (
+            <View style={styles.selectedStation}>
+              <Text style={styles.selectedStationText} allowFontScaling numberOfLines={1}>
+                {destino.name}
+              </Text>
               <Pressable
-                onPress={() => setBusca('')}
-                hitSlop={10}
+                onPress={() => {
+                  setDestinoId(null);
+                  setBusca('');
+                }}
                 accessibilityRole="button"
-                accessibilityLabel="Limpar busca"
+                accessibilityLabel="Trocar destino selecionado"
               >
-                <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                <Ionicons name="close-circle" size={20} color={colors.textMuted} />
               </Pressable>
-            )}
-          </View>
-
-          {destinosFiltrados.length === 0 ? (
-            <Text style={styles.semResultadoText} allowFontScaling>
-              Nenhum posto encontrado para "{busca}".
-            </Text>
-          ) : (
-            <View style={styles.chipsRow}>
-              {destinosFiltrados.map((e) => (
-                <Chip key={e.id} label={e.name} selected={destinoId === e.id} onPress={() => setDestinoId(e.id)} />
-              ))}
             </View>
+          ) : (
+            <>
+              <View style={[styles.searchBar, shadow.card]}>
+                <Ionicons name="search" size={18} color={colors.textMuted} />
+                <TextInput
+                  value={busca}
+                  onChangeText={setBusca}
+                  placeholder="Buscar posto por nome ou endereço..."
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.searchInput}
+                  allowFontScaling
+                  accessibilityLabel="Buscar posto de destino por nome ou endereço"
+                  returnKeyType="search"
+                  autoCorrect={false}
+                />
+                {busca.length > 0 && (
+                  <Pressable
+                    onPress={() => setBusca('')}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel="Limpar busca"
+                  >
+                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                  </Pressable>
+                )}
+              </View>
+
+              {busca.trim().length > 0 &&
+                (destinosFiltrados.length === 0 ? (
+                  <Text style={styles.semResultadoText} allowFontScaling>
+                    Nenhum posto encontrado para "{busca}".
+                  </Text>
+                ) : (
+                  destinosFiltrados.map((e) => (
+                    <Pressable
+                      key={e.id}
+                      onPress={() => setDestinoId(e.id)}
+                      style={styles.suggestionRow}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Selecionar ${e.name}`}
+                    >
+                      <Ionicons name="location-outline" size={16} color={colors.primary} />
+                      <Text style={styles.suggestionText} allowFontScaling numberOfLines={1}>
+                        {e.name} — {e.address}
+                      </Text>
+                    </Pressable>
+                  ))
+                ))}
+            </>
           )}
         </Animated.View>
 
@@ -304,11 +334,11 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) =>
     },
     headerTitle: {
       ...typography.h1,
-      color: colors.textOnDark,
+      color: colors.textOnGradient,
     },
     headerSubtitle: {
       ...typography.body,
-      color: colors.textOnDarkMuted,
+      color: colors.textOnGradientMuted,
       marginTop: 2,
       marginBottom: spacing.lg,
     },
@@ -347,9 +377,33 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) =>
       ...typography.caption,
       color: colors.textOnDarkMuted,
     },
-    chipsRow: {
+    selectedStation: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      padding: spacing.md,
+    },
+    selectedStationText: {
+      ...typography.bodyMedium,
+      color: colors.textPrimary,
+      flex: 1,
+      marginRight: spacing.sm,
+    },
+    suggestionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      padding: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.borderLight,
+    },
+    suggestionText: {
+      ...typography.caption,
+      color: colors.textPrimary,
+      flex: 1,
     },
     ctaBar: {
       position: 'absolute',

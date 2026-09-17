@@ -12,6 +12,7 @@ import { usarTema } from '../contexto/ContextoTema';
 import { estacoes, buscarEstacaoPorId } from '../dados/estacoes';
 import { CartaoEstacao } from '../componentes/CartaoEstacao';
 import { usarReservas } from '../contexto/ContextoReservas';
+import { usarAutenticacao } from '../contexto/ContextoAutenticacao';
 
 function formatarHora(h: number): string {
   return `${String(h).padStart(2, '0')}h`;
@@ -25,6 +26,8 @@ export default function TelaInicio() {
   const { reservas } = usarReservas();
   const reservaAtiva = Object.values(reservas)[0];
   const estacaoReservada = reservaAtiva ? buscarEstacaoPorId(reservaAtiva.stationId) : undefined;
+  const { usuario } = usarAutenticacao();
+  const primeiroNome = usuario?.name?.split(' ')[0] ?? 'motorista';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -32,7 +35,7 @@ export default function TelaInicio() {
         <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
           <View style={styles.headerText}>
             <Text style={styles.greeting} allowFontScaling>
-              Olá, motorista 👋
+              Olá, {primeiroNome}
             </Text>
             <Text style={styles.title} allowFontScaling>
               Para onde vamos hoje?
@@ -42,9 +45,9 @@ export default function TelaInicio() {
             onPress={() => navigation.getParent()?.navigate('Accessibility')}
             style={styles.avatar}
             accessibilityRole="button"
-            accessibilityLabel="Abrir perfil e acessibilidade"
+            accessibilityLabel="Abrir acessibilidade"
           >
-            <Ionicons name="person" size={20} color={colors.onPrimary} />
+            <Ionicons name="settings-outline" size={20} color={colors.onPrimary} />
           </Pressable>
         </Animated.View>
 
@@ -210,12 +213,12 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
   },
   heroTitle: {
     ...typography.h2,
-    color: colors.textOnDark,
+    color: colors.textOnGradient,
     marginBottom: spacing.xs,
   },
   heroSubtitle: {
     ...typography.body,
-    color: colors.textOnDarkMuted,
+    color: colors.textOnGradientMuted,
     marginBottom: spacing.lg,
   },
   heroButton: {

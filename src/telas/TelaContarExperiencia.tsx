@@ -238,11 +238,11 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
   },
   title: {
     ...typography.h1,
-    color: colors.textOnDark,
+    color: colors.textOnGradient,
   },
   subtitle: {
     ...typography.body,
-    color: colors.textOnDarkMuted,
+    color: colors.textOnGradientMuted,
     marginTop: 2,
   },
   content: {

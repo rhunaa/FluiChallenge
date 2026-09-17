@@ -37,6 +37,8 @@ export interface CoresTema {
 
   textOnDark: string;
   textOnDarkMuted: string;
+  textOnGradient: string;
+  textOnGradientMuted: string;
 
   onPrimary: string;
 
@@ -87,6 +89,8 @@ export const coresEscuras: CoresTema = {
 
   textOnDark: '#FFFFFF',
   textOnDarkMuted: '#C6BCE0',
+  textOnGradient: '#FFFFFF',
+  textOnGradientMuted: '#C6BCE0',
 
   onPrimary: '#FFFFFF',
 
@@ -133,6 +137,8 @@ export const coresClaras: CoresTema = {
 
   textOnDark: '#150E28',
   textOnDarkMuted: '#5B5570',
+  textOnGradient: '#FFFFFF',
+  textOnGradientMuted: '#C6BCE0',
 
   onPrimary: '#FFFFFF',
 

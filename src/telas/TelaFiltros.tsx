@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Texto as Text } from '../componentes/Texto';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -88,6 +88,17 @@ export default function TelaFiltros() {
     <View style={styles.container}>
       <LinearGradient colors={gradients.hero} style={styles.header}>
         <SafeAreaView edges={['top']}>
+          <View style={styles.headerTopRow}>
+            <Pressable
+              onPress={() => navigation.navigate('Map')}
+              style={styles.closeButton}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar filtros"
+              hitSlop={8}
+            >
+              <Ionicons name="close" size={20} color={colors.onPrimary} />
+            </Pressable>
+          </View>
           <Text style={styles.headerTitle} accessibilityRole="header" allowFontScaling>
             Filtros de Busca
           </Text>
@@ -189,14 +200,27 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
     borderBottomLeftRadius: radius.xl,
     borderBottomRightRadius: radius.xl,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: spacing.sm,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
     ...typography.h1,
-    color: colors.textOnDark,
-    marginTop: spacing.sm,
+    color: colors.textOnGradient,
+    marginTop: spacing.md,
   },
   headerSubtitle: {
     ...typography.body,
-    color: colors.textOnDarkMuted,
+    color: colors.textOnGradientMuted,
     marginTop: 2,
     marginBottom: spacing.lg,
   },
@@ -215,7 +239,7 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
   },
   analyzingText: {
     ...typography.caption,
-    color: colors.textOnDark,
+    color: colors.textOnGradient,
     flex: 1,
   },
   content: {

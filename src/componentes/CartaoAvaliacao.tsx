@@ -75,20 +75,9 @@ export function CartaoAvaliacao({
         {review.comment}
       </Text>
 
-      <View style={styles.footer}>
-        <Text style={styles.author} allowFontScaling>
-          {review.authorName} · {review.createdAt}
-        </Text>
-        <View style={styles.footerActions}>
-          <View style={styles.footerAction}>
-            <Ionicons name="chatbubble-outline" size={14} color={colors.textSecondary} />
-            <Text style={styles.footerActionText} allowFontScaling>
-              {review.comments}
-            </Text>
-          </View>
-          <Ionicons name="share-social-outline" size={16} color={colors.textSecondary} />
-        </View>
-      </View>
+      <Text style={styles.author} allowFontScaling>
+        {review.authorName} · {review.createdAt}
+      </Text>
     </Animated.View>
   );
 }
@@ -151,27 +140,8 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
     fontSize: 14,
     marginBottom: spacing.sm,
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   author: {
     ...typography.small,
     color: colors.textMuted,
-  },
-  footerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  footerAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  footerActionText: {
-    ...typography.small,
-    color: colors.textSecondary,
   },
 });

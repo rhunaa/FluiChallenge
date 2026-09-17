@@ -12,6 +12,7 @@ import { ProvedorFiltro } from './src/contexto/ContextoFiltro';
 import { ProvedorFavoritos } from './src/contexto/ContextoFavoritos';
 import { ProvedorAvaliacoes } from './src/contexto/ContextoAvaliacoes';
 import { ProvedorReservas } from './src/contexto/ContextoReservas';
+import { ProvedorAutenticacao } from './src/contexto/ContextoAutenticacao';
 import { RootNavigator } from './src/navegacao/RootNavigator';
 
 function SplashScreen() {
@@ -87,7 +88,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ProvedorTema>
-          <ConteudoApp />
+          <ProvedorAutenticacao>
+            <ConteudoApp />
+          </ProvedorAutenticacao>
         </ProvedorTema>
       </SafeAreaProvider>
     </GestureHandlerRootView>

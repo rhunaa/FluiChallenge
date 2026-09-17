@@ -10,7 +10,16 @@ import { radius, shadow, spacing, typography } from '../tema/tema';
 
 export default function TelaAcessibilidade() {
   const navigation = useNavigation<any>();
-  const { colors, modo, alternarModo, fontScale, fontScaleLabel, aumentarFonte } = usarTema();
+  const {
+    colors,
+    modo,
+    alternarModo,
+    fontScaleLabel,
+    aumentarFonte,
+    diminuirFonte,
+    podeAumentarFonte,
+    podeDiminuirFonte,
+  } = usarTema();
   const styles = criarEstilos(colors);
 
   return (
@@ -28,10 +37,10 @@ export default function TelaAcessibilidade() {
         </View>
 
         <View style={styles.avatar}>
-          <Ionicons name="person" size={30} color={colors.onPrimary} />
+          <Ionicons name="settings" size={30} color={colors.onPrimary} />
         </View>
         <Texto style={styles.title} accessibilityRole="header">
-          Perfil & Acessibilidade
+          Acessibilidade
         </Texto>
         <Texto style={styles.subtitle}>Ajuste o app do seu jeito.</Texto>
 
@@ -45,16 +54,31 @@ export default function TelaAcessibilidade() {
               <Texto style={styles.cardDescription}>Atual: {fontScaleLabel}</Texto>
             </View>
           </View>
-          <Pressable
-            onPress={aumentarFonte}
-            style={styles.actionButton}
-            accessibilityRole="button"
-            accessibilityLabel="Aumentar tamanho do texto"
-            accessibilityHint={`Tamanho atual: ${fontScaleLabel}. Toque para aumentar.`}
-          >
-            <Ionicons name="add-circle-outline" size={18} color={colors.onPrimary} />
-            <Texto style={styles.actionButtonText}>Aumentar texto (A{fontScale > 1 ? '+' : ''})</Texto>
-          </Pressable>
+          <View style={styles.stepperRow}>
+            <Pressable
+              onPress={diminuirFonte}
+              disabled={!podeDiminuirFonte}
+              style={[styles.stepperButton, !podeDiminuirFonte && styles.stepperButtonDisabled]}
+              accessibilityRole="button"
+              accessibilityLabel="Diminuir tamanho do texto"
+              accessibilityHint={`Tamanho atual: ${fontScaleLabel}. Toque para diminuir.`}
+              accessibilityState={{ disabled: !podeDiminuirFonte }}
+            >
+              <Ionicons name="remove" size={20} color={colors.onPrimary} />
+            </Pressable>
+            <Texto style={styles.stepperLabel}>{fontScaleLabel}</Texto>
+            <Pressable
+              onPress={aumentarFonte}
+              disabled={!podeAumentarFonte}
+              style={[styles.stepperButton, !podeAumentarFonte && styles.stepperButtonDisabled]}
+              accessibilityRole="button"
+              accessibilityLabel="Aumentar tamanho do texto"
+              accessibilityHint={`Tamanho atual: ${fontScaleLabel}. Toque para aumentar.`}
+              accessibilityState={{ disabled: !podeAumentarFonte }}
+            >
+              <Ionicons name="add" size={20} color={colors.onPrimary} />
+            </Pressable>
+          </View>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(70).springify().damping(16)} style={[styles.card, shadow.card]}>
@@ -178,5 +202,28 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) =>
     actionButtonText: {
       ...typography.bodyMedium,
       color: colors.onPrimary,
+    },
+    stepperRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    stepperButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepperButtonDisabled: {
+      backgroundColor: colors.offline,
+    },
+    stepperLabel: {
+      ...typography.bodyMedium,
+      color: colors.textPrimary,
+      flex: 1,
+      textAlign: 'center',
     },
   });

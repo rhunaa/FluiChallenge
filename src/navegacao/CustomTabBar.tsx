@@ -2,32 +2,29 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { gradients, shadow } from '../tema/tema';
+import { shadow } from '../tema/tema';
 import { usarTema } from '../contexto/ContextoTema';
 
 const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap; label: string }> = {
   Home: { active: 'home', inactive: 'home-outline', label: 'Início' },
   Map: { active: 'map', inactive: 'map-outline', label: 'Mapa' },
-  Filters: { active: 'flash', inactive: 'flash-outline', label: 'Filtros' },
   Favorites: { active: 'bookmark', inactive: 'bookmark-outline', label: 'Favoritos' },
   Community: { active: 'people', inactive: 'people-outline', label: 'Comunidade' },
+  Profile: { active: 'person-circle', inactive: 'person-circle-outline', label: 'Perfil' },
 };
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { colors } = usarTema();
   const styles = criarEstilos(colors);
   const insets = useSafeAreaInsets();
-  const sideRoutes = state.routes.filter((r) => r.name !== 'Filters');
-  const filtersIndex = state.routes.findIndex((r) => r.name === 'Filters');
-  const filtersFocused = state.index === filtersIndex;
+  const visibleRoutes = state.routes.filter((r) => r.name !== 'Filters');
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 14) }]} pointerEvents="box-none">
       <View style={[styles.bar, shadow.floating]}>
-        {sideRoutes.map((route) => {
+        {visibleRoutes.map((route) => {
           const routeIndex = state.routes.findIndex((r) => r.key === route.key);
           const focused = state.index === routeIndex;
           const meta = ICONS[route.name] ?? ICONS.Home;
@@ -42,19 +39,6 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           );
         })}
       </View>
-
-      <Pressable
-        onPress={() => navigation.navigate('Filters')}
-        style={styles.fabWrapper}
-        accessibilityRole="button"
-        accessibilityLabel="Abrir filtros de busca"
-        accessibilityHint="Abre os filtros de busca de pontos de recarga"
-        hitSlop={8}
-      >
-        <LinearGradient colors={gradients.fab} style={[styles.fab, filtersFocused && styles.fabActive]}>
-          <Ionicons name="flash" size={26} color={colors.onPrimary} />
-        </LinearGradient>
-      </Pressable>
     </View>
   );
 }
@@ -93,7 +77,6 @@ function TabButton({
 }
 
 const BAR_HEIGHT = 62;
-const FAB_SIZE = 58;
 
 const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
   container: {
@@ -110,31 +93,13 @@ const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleShe
     borderRadius: BAR_HEIGHT / 2,
     backgroundColor: colors.surface,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 28,
+    justifyContent: 'space-around',
+    paddingHorizontal: 12,
   },
   tabButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fabWrapper: {
-    position: 'absolute',
-    top: -FAB_SIZE / 2 - 4,
-    alignSelf: 'center',
-  },
-  fab: {
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: colors.background,
-    ...shadow.floating,
-  },
-  fabActive: {
-    borderColor: colors.primary,
   },
 });
