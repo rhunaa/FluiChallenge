@@ -11,21 +11,37 @@ import {
   statusDosConectores,
 } from '../utilitarios/filtrarEstacoes';
 import { MapaEstilizado } from './MapaEstilizado';
-import { Mensagem } from './Interface';
 import { Texto } from './Texto';
+import { EstadoMapa } from './estadoMapa';
 interface Props {
   estacoes: Estacao[];
   selectedId?: string;
   fadedIds?: string[];
   onSelectStation: (id: string) => void;
+  /* Mesmo contrato do mapa web: altura total, faixa coberta pela busca no topo e pela folha embaixo. */
+  altura?: number;
+  reservaSuperior?: number;
+  reservaInferior?: number;
+  onStatus?: (estado: EstadoMapa) => void;
 }
-export function MapaGoogle({ estacoes, selectedId, fadedIds = [], onSelectStation }: Props) {
+export function MapaGoogle({
+  estacoes,
+  selectedId,
+  fadedIds = [],
+  onSelectStation,
+  altura = 520,
+  reservaSuperior = 0,
+  reservaInferior = 0,
+  onStatus,
+}: Props) {
   const ref = useRef<MapView | null>(null),
     [ready, setReady] = useState(false),
     { usuario } = usarAutenticacao(),
     { filters } = usarFiltros(),
     { colors } = usarTema(),
     keyConfigured = Constants.expoConfig?.extra?.hasGoogleMapsKey === true;
+  const avisar = useRef(onStatus);
+  avisar.current = onStatus;
   const visible = useMemo(
       () => estacoes.filter((s) => !fadedIds.includes(s.id)),
       [estacoes, fadedIds],
@@ -50,6 +66,10 @@ export function MapaGoogle({ estacoes, selectedId, fadedIds = [], onSelectStatio
       longitudeDelta: Math.max(0.018, (maxLng - minLng) * 1.4),
     };
   }, [visible]);
+  /* A folha da tela mostra o estado numa linha curta; nada de aviso por cima do mapa. */
+  useEffect(() => {
+    avisar.current?.({ fase: !keyConfigured ? 'ilustrativo' : ready ? 'pronto' : 'carregando' });
+  }, [keyConfigured, ready]);
   useEffect(() => {
     if (!ready) return;
     if (selected)
@@ -68,33 +88,27 @@ export function MapaGoogle({ estacoes, selectedId, fadedIds = [], onSelectStatio
         { edgePadding: { top: 50, right: 35, bottom: 35, left: 35 }, animated: false },
       );
   }, [selectedId, visible, ready]);
+  /* Sem chave nativa: mapa ilustrativo direto, com os pinos abaixo da busca. */
   if (!keyConfigured)
     return (
-      <View style={{ gap: 12 }}>
-        <Mensagem>
-          Mapa ilustrativo: a chave nativa não está configurada. A lista e a navegação externa
-          continuam disponíveis.
-        </Mensagem>
-        <MapaEstilizado
-          estacoes={visible}
-          selectedId={selectedId}
-          onSelectStation={onSelectStation}
-        />
-      </View>
+      <MapaEstilizado
+        estacoes={visible}
+        selectedId={selectedId}
+        onSelectStation={onSelectStation}
+        altura={altura}
+        reservaSuperior={reservaSuperior}
+      />
     );
-  if (!visible.length)
-    return (
-      <Mensagem>
-        Nenhum posto corresponde aos filtros. Use a lista ou limpe os ajustes.
-      </Mensagem>
-    );
+  if (!visible.length) return <View style={{ height: altura }} />;
+  /* Mapa na área toda acima da folha; o mapPadding tira logo, controles e enquadramento de baixo da busca. */
   return (
-    <View style={{ height: 380, borderRadius: 18, overflow: 'hidden' }}>
+    <View style={{ height: altura - reservaInferior }}>
       <MapView
         ref={ref}
         provider={PROVIDER_GOOGLE}
         initialRegion={region}
         onMapReady={() => setReady(true)}
+        mapPadding={{ top: reservaSuperior, right: 0, bottom: 0, left: 0 }}
         style={{ flex: 1 }}
       >
         {visible.map((s) => {
@@ -135,14 +149,6 @@ export function MapaGoogle({ estacoes, selectedId, fadedIds = [], onSelectStatio
           );
         })}
       </MapView>
-      {!ready && (
-        <View
-          pointerEvents="none"
-          style={{ position: 'absolute', top: 12, left: 12, right: 12 }}
-        >
-          <Mensagem>Carregando mapa geográfico… A lista abaixo já está disponível.</Mensagem>
-        </View>
-      )}
     </View>
   );
 }
