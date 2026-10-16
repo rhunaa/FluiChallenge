@@ -101,8 +101,8 @@ export function MapaGoogle({ estacoes, selectedId, fadedIds = [], onSelectStatio
     carregarGoogleMaps().then(async api => {
       const [{ Map: GoogleMap }, { AdvancedMarkerElement }] = await Promise.all([api.importLibrary('maps'), api.importLibrary('marker')]);
       if (cancelado) return;
-      // Só o zoom fica: tela cheia, Street View, tipo de mapa e câmera batiam na busca e no botão de filtros. Pontos do Google não abrem balões de texto.
-      instance = new GoogleMap(node, { center: { lat: -23.5505, lng: -46.6333 }, zoom: 12, mapId: mapIdGoogle(), gestureHandling: 'cooperative', disableDefaultUI: true, zoomControl: true, clickableIcons: false, keyboardShortcuts: true });
+      // Só o zoom fica: tela cheia, Street View, tipo de mapa e câmera batiam na busca e no botão de filtros. Pontos do Google não abrem balões de texto. 'greedy': um dedo ou o mouse arrasta o mapa; dois dedos, pinça ou a roda dão zoom.
+      instance = new GoogleMap(node, { center: { lat: -23.5505, lng: -46.6333 }, zoom: 12, mapId: mapIdGoogle(), gestureHandling: 'greedy', disableDefaultUI: true, zoomControl: true, clickableIcons: false, keyboardShortcuts: true });
       setSdk({ api, AdvancedMarkerElement }); setMapa(instance); setFase('ready');
     }).catch(() => { if (!cancelado) setFase('failed'); });
     return () => { cancelado = true; entries.current.forEach(e => { e.marker.map = null; }); entries.current.clear(); instance && (window as any).google?.maps?.event?.clearInstanceListeners(instance); node.replaceChildren(); };
@@ -157,7 +157,7 @@ export function MapaGoogle({ estacoes, selectedId, fadedIds = [], onSelectStatio
     });
     return () => cancelAnimationFrame(frame);
   }, [mapa, sdk, focused, fase, selectedId]);
-  const fallback = <MapaEstilizado estacoes={visible} selectedId={selectedId} onSelectStation={onSelectStation} altura={altura} reservaSuperior={reservaSuperior} />;
+  const fallback = <MapaEstilizado estacoes={visible} selectedId={selectedId} onSelectStation={onSelectStation} altura={altura} reservaSuperior={reservaSuperior} reservaInferior={reservaInferior} />;
   if (!configured) return fallback;
   const pronto = fase === 'ready';
   /* O Google ocupa a área toda acima da folha (logo e créditos à vista). Enquanto ele não chega, ou se falhar, o mapa ilustrativo segura a tela. */

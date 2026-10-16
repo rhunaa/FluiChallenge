@@ -88,7 +88,7 @@ export function MapaGoogle({
         { edgePadding: { top: 50, right: 35, bottom: 35, left: 35 }, animated: false },
       );
   }, [selectedId, visible, ready]);
-  /* Sem chave nativa: mapa ilustrativo direto, com os pinos abaixo da busca. */
+  /* Sem chave nativa: mapa ilustrativo direto, com os pinos entre a busca e a folha. */
   if (!keyConfigured)
     return (
       <MapaEstilizado
@@ -97,6 +97,7 @@ export function MapaGoogle({
         onSelectStation={onSelectStation}
         altura={altura}
         reservaSuperior={reservaSuperior}
+        reservaInferior={reservaInferior}
       />
     );
   if (!visible.length) return <View style={{ height: altura }} />;

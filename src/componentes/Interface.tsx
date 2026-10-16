@@ -164,7 +164,7 @@ export function Vazio({ titulo, descricao, acao }: { titulo: string; descricao: 
 }
 
 /* Pagina r7: fundo vivo do clima da tela, titulo de 28 px, avatar ou voltar redondos e folga para o dock. */
-export function Pagina({ title, subtitle, back = false, profile = true, children, hero = false, clima = 'padrao', semCabecalho = false }: { title: string; subtitle?: string; back?: boolean; profile?: boolean; children: React.ReactNode; hero?: boolean; clima?: ClimaFundo; semCabecalho?: boolean }) {
+export function Pagina({ title, subtitle, back = false, profile = true, children, hero = false, clima = 'padrao', semCabecalho = false, rolar = true }: { title: string; subtitle?: string; back?: boolean; profile?: boolean; children: React.ReactNode; hero?: boolean; clima?: ClimaFundo; semCabecalho?: boolean; rolar?: boolean }) {
   const { colors } = usarTema();
   const { txt, txt2 } = usarCoresTela();
   const focused = useIsFocused();
@@ -227,7 +227,7 @@ export function Pagina({ title, subtitle, back = false, profile = true, children
   return (
     <View nativeID={pageId} role="main" style={{ flex: 1, backgroundColor: colors.background }}>
       <FundoFlui clima={clima} />
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingBottom: semCabecalho ? 0 : (comDock ? 120 : 32) + insets.bottom }}>
+      <ScrollView keyboardShouldPersistTaps="handled" scrollEnabled={rolar || Platform.OS === 'web'} bounces={rolar} contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingBottom: semCabecalho ? 0 : (comDock ? 120 : 32) + insets.bottom }}>
         <View style={semCabecalho ? { width: '100%', maxWidth: 640, flexGrow: 1 } : { width: '100%', maxWidth: 640, paddingHorizontal: 20, paddingTop: Math.max(insets.top, 48) + 6, gap: 16 }}>
           {semCabecalho ? <Texto accessibilityRole="header" aria-level={1} style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 }}>{title}</Texto> : null}
           {semCabecalho ? null : <View style={{ flexDirection: 'row', alignItems: back ? 'center' : 'flex-start', gap: 14 }}>

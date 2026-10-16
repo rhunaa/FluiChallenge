@@ -18,10 +18,12 @@ interface Props {
   altura?: number;
   /* Fim da busca e do contador que ficam por cima do mapa: nenhum pino nasce embaixo deles. */
   reservaSuperior?: number;
+  /* Faixa coberta embaixo (folha recolhida e dock): nenhum pino nasce embaixo dela. */
+  reservaInferior?: number;
 }
 
 /* Mapa ilustrativo da prancha r7: rio, parque e vias desenhados; pinos em pilula com a potencia; selecionado em energia. */
-export function MapaEstilizado({ estacoes, selectedId, fadedIds = [], onSelectStation, altura = 520, reservaSuperior = 0 }: Props) {
+export function MapaEstilizado({ estacoes, selectedId, fadedIds = [], onSelectStation, altura = 520, reservaSuperior = 0, reservaInferior = 0 }: Props) {
   const [width, setWidth] = useState(393);
   const { colors, modo, fontScale } = usarTema();
   const janela = useWindowDimensions();
@@ -33,9 +35,9 @@ export function MapaEstilizado({ estacoes, selectedId, fadedIds = [], onSelectSt
   const { filters } = usarFiltros();
   const p = 'mp' + useId().replace(/[^a-z0-9]/gi, '');
   const b = useMemo(() => ({ minLat: Math.min(...todas.map((s) => s.lat)), maxLat: Math.max(...todas.map((s) => s.lat)), minLng: Math.min(...todas.map((s) => s.lng)), maxLng: Math.max(...todas.map((s) => s.lng)) }), []);
-  /* Os pinos começam abaixo da busca e do contador; com 520 px fica igual a antes. */
-  const topo = Math.max(Math.round(altura * 0.34), reservaSuperior + 18);
-  const base = altura - 96;
+  /* Os pinos começam abaixo da busca e do contador; com 520 px fica igual a antes. Com a folha por cima (reservaInferior), eles usam só a faixa livre entre a busca e a folha. */
+  const topo = reservaInferior > 0 ? reservaSuperior + 18 : Math.max(Math.round(altura * 0.34), reservaSuperior + 18);
+  const base = reservaInferior > 0 ? Math.max(topo + 40, altura - reservaInferior - 52) : altura - 96;
   const lista = estacoes.filter((s) => !fadedIds.includes(s.id));
   /* Ordem fixa dos pinos (teclado e leitor de tela); o selecionado sobe só por camada. */
   const ordenada = lista;
