@@ -5,7 +5,7 @@ import { Estacao } from '../tipos';
 import { usarFiltros } from '../contexto/ContextoFiltro';
 import { usarAutenticacao } from '../contexto/ContextoAutenticacao';
 import { conectoresCorrespondentes, statusDosConectores } from '../utilitarios/filtrarEstacoes';
-import { carregarGoogleMaps, mapIdGoogle, observarFalhaGoogleMaps, temChaveGoogleMapsWeb } from '../servicos/googleMaps';
+import { carregarGoogleMaps, mapIdGoogle, observarFalhaGoogleMaps, observarGoogleMapsTardio, temChaveGoogleMapsWeb } from '../servicos/googleMaps';
 import { MapaEstilizado } from './MapaEstilizado';
 import { Botao, Corpo, Mensagem } from './Interface';
 interface Props { estacoes: Estacao[]; selectedId?: string; fadedIds?: string[]; onSelectStation: (id: string) => void }
@@ -22,7 +22,10 @@ export function MapaGoogle({ estacoes, selectedId, fadedIds = [], onSelectStatio
   const [mapa, setMapa] = useState<any>(null), [sdk, setSdk] = useState<any>(null);
   const [fase, setFase] = useState<'loading'|'ready'|'failed'>('loading'), [erro, setErro] = useState(''), [tentativa, setTentativa] = useState(0);
   const signature = visible.map(s => `${s.id}:${s.lat}:${s.lng}`).join('|');
-  useEffect(() => observarFalhaGoogleMaps(() => { setErro('O Google Maps recusou a configuração. Confira a chave web e os domínios permitidos.'); setFase('failed'); }), []);
+  const faseAtual = useRef(fase); faseAtual.current = fase; const recusado = useRef(false);
+  useEffect(() => observarFalhaGoogleMaps(() => { recusado.current = true; setErro('O Google Maps recusou a configuração. Confira a chave web e os domínios permitidos.'); setFase('failed'); }), []);
+  // Rede lenta: se o Google chegar depois do aviso, o mapa real entra sozinho no lugar do ilustrativo.
+  useEffect(() => observarGoogleMapsTardio(() => { if (faseAtual.current === 'failed' && !recusado.current) { setFase('loading'); setTentativa(n => n + 1); } }), []);
   useEffect(() => {
     if (!configured || !visitado || !container.current) return;
     let cancelado = false; let instance: any; const node = container.current;

@@ -2,6 +2,7 @@
 export type GoogleMapsSdk = { importLibrary: (name: string) => Promise<any>; [key: string]: any };
 let carregamento: Promise<GoogleMapsSdk> | undefined;
 const falhas = new Set<() => void>();
+const tardios = new Set<() => void>();
 export function temChaveGoogleMapsWeb() {
   return !!process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim();
 }
@@ -11,6 +12,11 @@ export function mapIdGoogle() {
 export function observarFalhaGoogleMaps(listener: () => void) {
   falhas.add(listener);
   return () => { falhas.delete(listener); };
+}
+// Avisa quando o Google responde depois que o app já tinha desistido (rede lenta).
+export function observarGoogleMapsTardio(listener: () => void) {
+  tardios.add(listener);
+  return () => { tardios.delete(listener); };
 }
 export function carregarGoogleMaps(chave = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() || ''): Promise<GoogleMapsSdk> {
   if (typeof window === 'undefined' || typeof document === 'undefined') return Promise.reject(new Error('Mapa disponível no navegador.'));
@@ -24,7 +30,9 @@ export function carregarGoogleMaps(chave = process.env.EXPO_PUBLIC_GOOGLE_MAPS_A
     let concluido = false;
     const terminar = (erro?: Error) => {
       if (concluido) return;
-      concluido = true; clearTimeout(timer); delete w[callback];
+      concluido = true; clearTimeout(timer);
+      // O script pode responder depois (rede lenta ou script repetido): a função não pode sumir.
+      w[callback] = () => { if (w.google?.maps?.importLibrary) tardios.forEach(fn => fn()); };
       if (erro) { script.remove(); carregamento = undefined; reject(erro); }
       else resolve(w.google.maps);
     };
