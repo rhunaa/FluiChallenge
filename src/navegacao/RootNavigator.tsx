@@ -9,46 +9,27 @@ import TelaPlanejadorViagem from '../telas/TelaPlanejadorViagem';
 import TelaLogin from '../telas/TelaLogin';
 import TelaCadastro from '../telas/TelaCadastro';
 import { usarAutenticacao } from '../contexto/ContextoAutenticacao';
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
 export function RootNavigator() {
   const { logado } = usarAutenticacao();
-
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }}>
       {logado ? (
         <>
           <Stack.Screen name="Tabs" component={TabNavigator} />
-          <Stack.Screen
-            name="StationDetail"
-            component={TelaDetalhesEstacao}
-            options={{ presentation: 'card', animation: 'slide_from_right' }}
-          />
+          <Stack.Screen name="StationDetail" component={TelaDetalhesEstacao} />
           <Stack.Screen
             name="ReportExperience"
             component={TelaContarExperiencia}
-            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+            options={{ presentation: 'modal' }}
           />
-          <Stack.Screen
-            name="Accessibility"
-            component={TelaAcessibilidade}
-            options={{ presentation: 'card', animation: 'slide_from_right' }}
-          />
-          <Stack.Screen
-            name="TripPlanner"
-            component={TelaPlanejadorViagem}
-            options={{ presentation: 'card', animation: 'slide_from_right' }}
-          />
+          <Stack.Screen name="Accessibility" component={TelaAcessibilidade} />
+          <Stack.Screen name="TripPlanner" component={TelaPlanejadorViagem} />
         </>
       ) : (
         <>
           <Stack.Screen name="Login" component={TelaLogin} />
-          <Stack.Screen
-            name="Cadastro"
-            component={TelaCadastro}
-            options={{ animation: 'slide_from_right' }}
-          />
+          <Stack.Screen name="Cadastro" component={TelaCadastro} />
         </>
       )}
     </Stack.Navigator>

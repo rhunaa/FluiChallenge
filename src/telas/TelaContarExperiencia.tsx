@@ -1,365 +1,296 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { Texto as Text } from '../componentes/Texto';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, Pressable } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
-import { gradients, radius, spacing, typography } from '../tema/tema';
-import { usarTema } from '../contexto/ContextoTema';
-import { estacoes } from '../dados/estacoes';
-import { ROTULOS_CATEGORIA_AVALIACAO, CategoriasAvaliacao } from '../tipos';
-import { AvaliacaoEstrelas } from '../componentes/AvaliacaoEstrelas';
+import { Texto } from '../componentes/Texto';
+import { FotoPosto } from '../componentes/VisualFlui';
+import { Capitulo, Overline, usarCoresTela } from '../componentes/AssinaturaFlui';
+import { CategoriasAvaliacao } from '../tipos';
+import { estacoes, buscarEstacaoPorId } from '../dados/estacoes';
+import { buscarEstacoes } from '../utilitarios/filtrarEstacoes';
 import { usarAvaliacoes } from '../contexto/ContextoAvaliacoes';
+import { AvaliacaoEstrelas } from '../componentes/AvaliacaoEstrelas';
+import { Pagina, Papel, Titulo, Corpo, Campo, Botao, Mensagem } from '../componentes/Interface';
 
-const MOODS = [
-  { value: 1, emoji: '😖', label: 'Péssima' },
-  { value: 2, emoji: '🙁', label: 'Ruim' },
-  { value: 3, emoji: '😐', label: 'Regular' },
-  { value: 4, emoji: '🙂', label: 'Boa' },
-  { value: 5, emoji: '🤩', label: 'Incrível' },
+const aspects: [keyof CategoriasAvaliacao, string][] = [
+  ['availability', 'Disponibilidade'],
+  ['queue', 'Fila / espera'],
+  ['speed', 'Velocidade de recarga'],
+  ['comfort', 'Conforto do local'],
+  ['value', 'Custo-benefício'],
 ];
+const moods = ['Péssima', 'Ruim', 'Regular', 'Boa', 'Incrível'];
+const rostos = ['😞', '🙁', '😐', '🙂', '😄'];
+const etapas = ['Posto', 'Geral', 'Aspectos', 'Dica'];
 
-const DEFAULT_RATINGS: CategoriasAvaliacao = {
-  availability: 0,
-  queue: 0,
-  speed: 0,
-  comfort: 0,
-  value: 0,
-};
-
-const MAX_COMMENT_LENGTH = 500;
-
-export default function TelaContarExperiencia() {
-  const navigation = useNavigation<any>();
-  const { colors } = usarTema();
-  const styles = criarEstilos(colors);
-  const { adicionarAvaliacao } = usarAvaliacoes();
-
-  const [query, setQuery] = useState('');
-  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
-  const [mood, setMood] = useState<number | null>(null);
-  const [ratings, setRatings] = useState<CategoriasAvaliacao>(DEFAULT_RATINGS);
-  const [comment, setComment] = useState('');
-
-  const suggestions = useMemo(() => {
-    if (selectedStationId || query.trim().length === 0) return [];
-    return estacoes.filter((s) => s.name.toLowerCase().includes(query.toLowerCase())).slice(0, 4);
-  }, [query, selectedStationId]);
-
-  const selectedStation = estacoes.find((s) => s.id === selectedStationId);
-  const canPublish = !!selectedStationId && !!mood && Object.values(ratings).every((v) => v > 0);
-
-  function updateRating(key: keyof CategoriasAvaliacao, value: number) {
-    setRatings((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function handlePublish() {
-    if (!selectedStationId || !mood) return;
-    adicionarAvaliacao({
-      stationId: selectedStationId,
-      authorName: 'Você',
-      mood,
-      ratings,
-      comment: comment.trim() || 'Sem comentários adicionais.',
-    });
-    Alert.alert('Obrigado!', 'Sua experiência foi publicada na comunidade.');
-    navigation.goBack();
-  }
-
+/* Contar experiência r7: quatro etapas numeradas na mesma página, sobre o fundo vivo. */
+export function TelaContarExperiencia() {
+  const { txt, txt2, energia, fio, controle, controleBorda, controleTexto, cartao, bordaCartao } =
+    usarCoresTela();
+  const nav = useNavigation<any>(),
+    route = useRoute<any>(),
+    initial = buscarEstacaoPorId(route.params?.stationId),
+    { adicionarAvaliacao } = usarAvaliacoes(),
+    [id, setId] = useState<string | undefined>(initial?.id),
+    [query, setQuery] = useState(initial?.name || ''),
+    [mood, setMood] = useState(0),
+    [ratings, setRatings] = useState<CategoriasAvaliacao>({
+      availability: 0,
+      queue: 0,
+      speed: 0,
+      comfort: 0,
+      value: 0,
+    }),
+    [comment, setComment] = useState(''),
+    [published, setPublished] = useState(false),
+    [erro, setErro] = useState('');
+  const valid = !!id && mood > 0 && Object.values(ratings).every((v) => v > 0),
+    suggestions = !id ? buscarEstacoes(estacoes, query).slice(0, 5) : [],
+    avaliados = Object.values(ratings).filter((v) => v > 0).length,
+    escolhido = id ? buscarEstacaoPorId(id) : undefined,
+    feitas = [!!id, mood > 0, avaliados === 5, comment.trim().length > 0];
+  const apoio = { fontSize: 14, lineHeight: 20, color: txt2 };
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={gradients.hero} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerTopRow}>
-            <Pressable
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-              accessibilityRole="button"
-              accessibilityLabel="Voltar"
-            >
-              <Ionicons name="arrow-back" size={18} color={colors.onPrimary} />
-            </Pressable>
+    <Pagina
+      title="Contar experiência"
+      subtitle="Sua opinião ajuda quem vem depois."
+      back
+      profile={false}
+    >
+      {published ? (
+        <Papel>
+          <View
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              backgroundColor: '#E6DCFF',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="checkmark" size={26} color="#5B2BBF" />
           </View>
-          <Text style={styles.title} accessibilityRole="header" allowFontScaling>
-            Contar experiência
-          </Text>
-          <Text style={styles.subtitle} allowFontScaling>
-            Sua opinião ajuda a comunidade
-          </Text>
-        </SafeAreaView>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sectionLabel} allowFontScaling>
-          Selecione um posto
-        </Text>
-        {selectedStation ? (
-          <View style={styles.selectedStation}>
-            <Text style={styles.selectedStationText} allowFontScaling>
-              {selectedStation.name}
-            </Text>
-            <Pressable
-              onPress={() => {
-                setSelectedStationId(null);
-                setQuery('');
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Trocar posto selecionado"
-            >
-              <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-            </Pressable>
-          </View>
-        ) : (
-          <>
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Escreva o endereço ou nome do posto"
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
-              accessibilityLabel="Buscar posto pelo nome ou endereço"
-            />
-            {suggestions.map((s) => (
-              <Pressable
-                key={s.id}
-                onPress={() => {
-                  setSelectedStationId(s.id);
-                  setQuery(s.name);
-                }}
-                style={styles.suggestionRow}
-                accessibilityRole="button"
-                accessibilityLabel={`Selecionar ${s.name}`}
-              >
-                <Ionicons name="location-outline" size={16} color={colors.primary} />
-                <Text style={styles.suggestionText} allowFontScaling>
-                  {s.name} — {s.address}
-                </Text>
-              </Pressable>
+          <Titulo onCard>Experiência publicada nesta sessão</Titulo>
+          <Corpo>
+            Seu apelido e as cinco notas estão no feed. A demonstração não envia esta avaliação a
+            um operador.
+          </Corpo>
+          <Botao
+            label="Ver minha avaliação na comunidade"
+            onPress={() => nav.navigate('Tabs', { screen: 'Community' })}
+          />
+        </Papel>
+      ) : (
+        <>
+          <View aria-hidden style={{ flexDirection: 'row', gap: 6 }}>
+            {etapas.map((e, i) => (
+              <View key={e} style={{ flex: 1, gap: 6 }}>
+                <View
+                  style={{ height: 4, borderRadius: 2, backgroundColor: feitas[i] ? energia : fio }}
+                />
+                <Texto
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: '600',
+                    letterSpacing: 0.3,
+                    color: feitas[i] ? txt : txt2,
+                  }}
+                >
+                  {`${String(i + 1).padStart(2, '0')} ${e}`}
+                </Texto>
+              </View>
             ))}
-          </>
-        )}
+          </View>
 
-        <Text style={[styles.sectionLabel, styles.sectionSpacing]} allowFontScaling>
-          Como foi sua experiência geral?
-        </Text>
-        <View style={styles.moodRow}>
-          {MOODS.map((m) => {
-            const active = mood === m.value;
-            return (
-              <Pressable
-                key={m.value}
-                onPress={() => setMood(m.value)}
-                style={[styles.moodButton, active && styles.moodButtonActive]}
-                accessibilityRole="button"
-                accessibilityLabel={m.label}
-                accessibilityState={{ selected: active }}
-              >
-                <Text style={styles.moodEmoji} allowFontScaling>{m.emoji}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <Text style={[styles.sectionLabel, styles.sectionSpacing]} allowFontScaling>
-          Avalie os principais aspectos
-        </Text>
-        {(Object.keys(ROTULOS_CATEGORIA_AVALIACAO) as (keyof CategoriasAvaliacao)[]).map((key, i) => (
-          <Animated.View key={key} entering={FadeInUp.delay(i * 60).springify().damping(16)} style={styles.categoryRow}>
-            <View style={styles.categoryText}>
-              <Text style={styles.categoryTitle} allowFontScaling>
-                {ROTULOS_CATEGORIA_AVALIACAO[key].label}
-              </Text>
-              <Text style={styles.categoryHint} allowFontScaling>
-                {ROTULOS_CATEGORIA_AVALIACAO[key].hint}
-              </Text>
+          <Capitulo num="01" titulo="O posto" />
+          <Campo
+            label="Selecione um posto"
+            value={query}
+            onChangeText={(t) => {
+              setQuery(t);
+              setId(undefined);
+            }}
+            placeholder="Nome ou endereço"
+            help="A busca ignora acentos e espaços extras."
+            icone="search-outline"
+          />
+          {escolhido ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                padding: 12,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: bordaCartao,
+                backgroundColor: cartao,
+              }}
+            >
+              <FotoPosto
+                id={escolhido.id}
+                legenda={false}
+                style={{ width: 52, height: 52, borderRadius: 14 }}
+              />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Overline cor="#5F5D69">POSTO ESCOLHIDO</Overline>
+                <Texto style={{ fontSize: 15, fontWeight: '600', color: '#1B1A20' }}>
+                  {escolhido.name}
+                </Texto>
+                <Texto style={{ fontSize: 12, color: '#4E4C58' }}>{escolhido.address}</Texto>
+              </View>
             </View>
-            <AvaliacaoEstrelas value={ratings[key]} onChange={(v) => updateRating(key, v)} label={ROTULOS_CATEGORIA_AVALIACAO[key].label} />
-          </Animated.View>
-        ))}
+          ) : null}
+          {suggestions.map((s) => (
+            <Pressable
+              key={s.id}
+              accessibilityRole="button"
+              accessibilityLabel={`${s.name} · ${s.address}`}
+              onPress={() => {
+                setId(s.id);
+                setQuery(s.name);
+              }}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                minHeight: 60,
+                padding: 10,
+                borderRadius: 18,
+                borderWidth: 1,
+                borderColor: controleBorda,
+                backgroundColor: controle,
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <FotoPosto
+                id={s.id}
+                legenda={false}
+                style={{ width: 40, height: 40, borderRadius: 12 }}
+              />
+              <View style={{ flex: 1, gap: 1 }}>
+                <Texto style={{ fontSize: 14, fontWeight: '600', color: controleTexto }}>
+                  {s.name}
+                </Texto>
+                <Texto style={{ fontSize: 12, color: txt2 }}>{s.address}</Texto>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={txt2} />
+            </Pressable>
+          ))}
+          {!id && query.trim().length > 0 && !suggestions.length && (
+            <Mensagem>Nenhum posto encontrado. Tente outro nome ou endereço.</Mensagem>
+          )}
 
-        <Text style={[styles.sectionLabel, styles.sectionSpacing]} allowFontScaling>
-          Conte mais sobre sua experiência
-        </Text>
-        <TextInput
-          value={comment}
-          onChangeText={(t) => setComment(t.slice(0, MAX_COMMENT_LENGTH))}
-          placeholder="Escreva aqui sua experiência, dicas ou observações..."
-          placeholderTextColor={colors.textMuted}
-          style={styles.textarea}
-          multiline
-          numberOfLines={4}
-          accessibilityLabel="Comentário sobre sua experiência"
-        />
-        <Text style={styles.charCount} allowFontScaling>
-          {comment.length}/{MAX_COMMENT_LENGTH}
-        </Text>
+          <Capitulo num="02" titulo="Como foi sua experiência geral?" />
+          <View
+            accessibilityRole="radiogroup"
+            accessibilityLabel="Experiência geral"
+            style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
+          >
+            {moods.map((l, i) => {
+              const sel = mood === i + 1;
+              return (
+                <Pressable
+                  key={l}
+                  accessibilityRole="radio"
+                  accessibilityLabel={l}
+                  accessibilityState={{ checked: sel }}
+                  aria-checked={sel}
+                  onPress={() => setMood(i + 1)}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    minWidth: 44,
+                    minHeight: 84,
+                    borderRadius: 18,
+                    paddingVertical: 12,
+                    paddingHorizontal: 4,
+                    gap: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1.5,
+                    borderColor: sel ? '#8B4DF0' : controleBorda,
+                    backgroundColor: sel ? '#8B4DF0' : controle,
+                    opacity: pressed ? 0.85 : 1,
+                  })}
+                >
+                  <Texto style={{ fontSize: 25 }}>{rostos[i]}</Texto>
+                  <Texto
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '600',
+                      textAlign: 'center',
+                      color: sel ? '#FFFFFF' : controleTexto,
+                    }}
+                  >
+                    {l}
+                  </Texto>
+                </Pressable>
+              );
+            })}
+          </View>
 
-        <Pressable
-          onPress={handlePublish}
-          disabled={!canPublish}
-          style={[styles.publishButton, !canPublish && styles.publishButtonDisabled]}
-          accessibilityRole="button"
-          accessibilityLabel="Publicar experiência"
-          accessibilityState={{ disabled: !canPublish }}
-        >
-          <Text style={styles.publishText} allowFontScaling>
-            Publicar Experiência
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </View>
+          <Capitulo num="03" titulo="Avalie os cinco aspectos" />
+          <View accessibilityLiveRegion="polite" style={{ gap: 8 }}>
+            <Texto style={apoio}>{avaliados} de 5 aspectos avaliados</Texto>
+            <View style={{ flexDirection: 'row', gap: 5 }}>
+              {aspects.map(([k]) => (
+                <View
+                  key={k}
+                  style={{
+                    flex: 1,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: ratings[k] > 0 ? energia : fio,
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+          {aspects.map(([k, l]) => (
+            <View
+              key={k}
+              style={{ paddingVertical: 10, gap: 6, borderBottomWidth: 1, borderColor: fio }}
+            >
+              <Texto style={{ fontSize: 15, fontWeight: '600', color: txt }}>{l}</Texto>
+              <AvaliacaoEstrelas
+                label={l}
+                value={ratings[k]}
+                onChange={(n) => setRatings((v) => ({ ...v, [k]: n }))}
+              />
+            </View>
+          ))}
+
+          <Capitulo num="04" titulo="Uma dica para a comunidade" />
+          <Campo
+            label="Conte mais sobre sua experiência (opcional)"
+            multiline
+            value={comment}
+            onChangeText={setComment}
+            maxLength={500}
+            placeholder="Dicas e observações, sem dados pessoais"
+            help={`${comment.length}/500 caracteres`}
+          />
+          {!valid && (
+            <Texto style={apoio}>
+              Selecione um posto, a experiência geral e uma nota em cada um dos cinco aspectos.
+            </Texto>
+          )}
+          {!!erro && <Mensagem erro>{erro}</Mensagem>}
+          <Botao
+            label="Publicar experiência"
+            icon="paper-plane-outline"
+            disabled={!valid}
+            onPress={() => {
+              if (id && adicionarAvaliacao({ stationId: id, mood, ratings, comment })) {
+                setPublished(true);
+              } else setErro('Não foi possível publicar. Revise o posto e todas as notas.');
+            }}
+          />
+        </>
+      )}
+    </Pagina>
   );
 }
-
-const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-    borderBottomLeftRadius: radius.xl,
-    borderBottomRightRadius: radius.xl,
-  },
-  headerTopRow: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    ...typography.h1,
-    color: colors.textOnGradient,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textOnGradientMuted,
-    marginTop: 2,
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: 60,
-    width: '100%',
-    maxWidth: 560,
-    alignSelf: 'center',
-  },
-  sectionLabel: {
-    ...typography.h3,
-    color: colors.textOnDark,
-    marginBottom: spacing.sm,
-  },
-  sectionSpacing: {
-    marginTop: spacing.xl,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    color: colors.textPrimary,
-    fontSize: 15,
-  },
-  suggestionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-  },
-  suggestionText: {
-    ...typography.caption,
-    color: colors.textPrimary,
-    flex: 1,
-  },
-  selectedStation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  selectedStationText: {
-    ...typography.bodyMedium,
-  },
-  moodRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  moodButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moodButtonActive: {
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  moodEmoji: {
-    fontSize: 24,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  categoryText: {
-    flex: 1,
-    paddingRight: spacing.sm,
-  },
-  categoryTitle: {
-    ...typography.bodyMedium,
-  },
-  categoryHint: {
-    ...typography.small,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  textarea: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    minHeight: 100,
-    textAlignVertical: 'top',
-    color: colors.textPrimary,
-    fontSize: 14,
-  },
-  charCount: {
-    ...typography.small,
-    color: colors.textOnDarkMuted,
-    textAlign: 'right',
-    marginTop: 4,
-  },
-  publishButton: {
-    backgroundColor: colors.primaryDark,
-    borderRadius: radius.pill,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.xl,
-  },
-  publishButtonDisabled: {
-    opacity: 0.4,
-  },
-  publishText: {
-    ...typography.bodyMedium,
-    color: colors.onPrimary,
-  },
-});
+export default TelaContarExperiencia;

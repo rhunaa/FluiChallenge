@@ -1,105 +1,79 @@
-import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, View, useWindowDimensions } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { shadow } from '../tema/tema';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Texto } from '../componentes/Texto';
 import { usarTema } from '../contexto/ContextoTema';
 
-const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap; label: string }> = {
-  Home: { active: 'home', inactive: 'home-outline', label: 'Início' },
-  Map: { active: 'map', inactive: 'map-outline', label: 'Mapa' },
-  Favorites: { active: 'bookmark', inactive: 'bookmark-outline', label: 'Favoritos' },
-  Community: { active: 'people', inactive: 'people-outline', label: 'Comunidade' },
-  Profile: { active: 'person-circle', inactive: 'person-circle-outline', label: 'Perfil' },
+type Icone = keyof typeof Ionicons.glyphMap;
+const itens: Record<string, { label: string; icon: Icone; ativo: Icone }> = {
+  Home: { label: 'Início', icon: 'home-outline', ativo: 'home' },
+  Map: { label: 'Mapa', icon: 'map-outline', ativo: 'map' },
+  Filters: { label: 'Recarga', icon: 'flash', ativo: 'flash' },
+  Favorites: { label: 'Salvos', icon: 'bookmark-outline', ativo: 'bookmark' },
+  Community: { label: 'Comunidade', icon: 'people-outline', ativo: 'people' },
 };
 
+/* Dock da prancha r7: flutua sobre a tela, com Recarga em destaque no centro. O nome acessivel e sempre o completo. */
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
-  const { colors } = usarTema();
-  const styles = criarEstilos(colors);
+  const { width } = useWindowDimensions();
+  const { modo, fontScale } = usarTema();
   const insets = useSafeAreaInsets();
-  const visibleRoutes = state.routes.filter((r) => r.name !== 'Filters');
-
+  const escuro = modo === 'dark';
+  const curto = width < 380 || fontScale > 1.2;
+  /* 'Comunidade' vira 'Feed' tambem quando o nome nao cabe na aba (por exemplo, com o espacamento de texto aumentado no navegador). */
+  const [medida, setMedida] = useState({ aba: 0, nome: 0 });
+  const naoCabe = medida.aba > 0 && medida.nome + 0.5 > medida.aba;
+  const noMapa = state.routes[state.index]?.name === 'Map';
+  const fade = noMapa ? (escuro ? '#EEEDF8' : '#FFFFFF') : escuro ? '#121116' : '#EEEDF8';
+  const fade0 = noMapa ? (escuro ? 'rgba(238,237,248,0)' : 'rgba(255,255,255,0)') : escuro ? 'rgba(18,17,22,0)' : 'rgba(238,237,248,0)';
+  const anel = escuro ? '#121116' : '#EEEDF8';
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 14) }]} pointerEvents="box-none">
-      <View style={[styles.bar, shadow.floating]}>
-        {visibleRoutes.map((route) => {
-          const routeIndex = state.routes.findIndex((r) => r.key === route.key);
-          const focused = state.index === routeIndex;
-          const meta = ICONS[route.name] ?? ICONS.Home;
-          return (
-            <TabButton
-              key={route.key}
-              focused={focused}
-              icon={focused ? meta.active : meta.inactive}
-              label={meta.label}
-              onPress={() => navigation.navigate(route.name)}
-            />
-          );
-        })}
+    <View role="navigation" aria-label="Navegação principal" pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
+      {/* Medidor invisivel do nome 'Comunidade', com a mesma fonte do rotulo: decide quando trocar por 'Feed'. */}
+      <View aria-hidden={true} pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, opacity: 0 }}>
+        <Texto numberOfLines={1} onLayout={(e) => { const nome = e.nativeEvent.layout.width; setMedida((m) => (m.nome === nome ? m : { ...m, nome })); }} style={{ fontSize: 10.5, fontWeight: '600' }}>Comunidade</Texto>
+      </View>
+      <LinearGradient pointerEvents="none" colors={[fade0, fade]} locations={[0, 0.62]} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 120 + insets.bottom }} />
+      <View pointerEvents="box-none" style={{ paddingHorizontal: 14, paddingBottom: 16 + insets.bottom, alignItems: 'center' }}>
+        <View style={{ width: '100%', maxWidth: 520, borderRadius: 26, shadowColor: escuro ? '#000000' : '#121116', shadowOffset: { width: 0, height: 12 }, shadowOpacity: escuro ? 0.45 : 0.25, shadowRadius: 30, elevation: 12 }}>
+          <View accessibilityRole="tablist" style={{ height: 68, borderRadius: 26, flexDirection: 'row', alignItems: 'center', backgroundColor: escuro ? 'rgba(28,27,33,0.94)' : '#242428', borderWidth: 1, borderColor: escuro ? 'rgba(201,182,255,0.14)' : 'rgba(238,237,248,0.07)', shadowColor: '#8B4DF0', shadowOffset: { width: 0, height: 0 }, shadowOpacity: escuro ? 0.22 : 0, shadowRadius: 40 }}>
+            {state.routes.filter((r) => itens[r.name]).map((r) => {
+              const item = itens[r.name];
+              const focused = state.routes[state.index]?.key === r.key;
+              const centro = r.name === 'Filters';
+              const rotulo = (curto || naoCabe) && r.name === 'Community' ? 'Feed' : item.label;
+              const onPress = () => {
+                const event = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true });
+                if (!event.defaultPrevented) navigation.navigate(r.name);
+              };
+              return (
+                <Pressable key={r.key} accessibilityRole="tab" accessibilityLabel={item.label} accessibilityState={{ selected: focused }} aria-selected={focused} onPress={onPress} onLayout={r.name === 'Community' ? (e) => { const aba = e.nativeEvent.layout.width; setMedida((m) => (m.aba === aba ? m : { ...m, aba })); } : undefined} style={({ pressed }) => ({ flex: 1, minWidth: 0, height: 68, alignItems: 'center', justifyContent: 'center', gap: 4, opacity: pressed ? 0.8 : 1 })}>
+                  {centro ? (
+                    <View style={{ marginTop: -34, alignItems: 'center' }}>
+                      <View style={{ width: 66, height: 66, borderRadius: 33, backgroundColor: anel, alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#8B4DF0', alignItems: 'center', justifyContent: 'center', shadowColor: '#8B4DF0', shadowOffset: { width: 0, height: escuro ? 0 : 8 }, shadowOpacity: escuro ? 0.65 : 0.4, shadowRadius: escuro ? 26 : 22, elevation: 10 }}>
+                          <Ionicons name="flash" size={26} color="#FFFFFF" />
+                        </View>
+                      </View>
+                      <Texto numberOfLines={1} style={{ fontSize: 10.5, fontWeight: '600', color: '#EEEDF8' }}>{rotulo}</Texto>
+                    </View>
+                  ) : (
+                    <>
+                      {focused ? <View style={{ position: 'absolute', top: 4, width: 20, height: 3, borderRadius: 2, backgroundColor: '#B48CFF' }} /> : null}
+                      <Ionicons name={focused ? item.ativo : item.icon} size={22} color={focused ? '#EEEDF8' : '#A9A6B8'} />
+                      <Texto numberOfLines={1} style={{ maxWidth: '100%', fontSize: 10.5, fontWeight: '600', textAlign: 'center', color: focused ? '#EEEDF8' : '#A9A6B8' }}>{rotulo}</Texto>
+                    </>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
       </View>
     </View>
   );
 }
-
-function TabButton({
-  focused,
-  icon,
-  label,
-  onPress,
-}: {
-  focused: boolean;
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  const { colors } = usarTema();
-  const styles = criarEstilos(colors);
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(focused ? 1.08 : 1, { damping: 12 }) }],
-  }));
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={styles.tabButton}
-      accessibilityRole="button"
-      accessibilityState={{ selected: focused }}
-      accessibilityLabel={label}
-      hitSlop={8}
-    >
-      <Animated.View style={style}>
-        <Ionicons name={icon} size={22} color={focused ? colors.primary : colors.textMuted} />
-      </Animated.View>
-    </Pressable>
-  );
-}
-
-const BAR_HEIGHT = 62;
-
-const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
-  container: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    bottom: 0,
-    alignItems: 'center',
-  },
-  bar: {
-    flexDirection: 'row',
-    width: '100%',
-    height: BAR_HEIGHT,
-    borderRadius: BAR_HEIGHT / 2,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 12,
-  },
-  tabButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default CustomTabBar;

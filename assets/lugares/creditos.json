@@ -1,0 +1,74 @@
+{
+ "st-1": {
+  "arquivo": "assets/lugares/st-1.jpg",
+  "titulo": "File:Webysther 20190306142828 - Praça da Sé.jpg",
+  "autor": "Webysther Nunes",
+  "licenca": "CC BY-SA 4.0",
+  "pagina": "https://commons.wikimedia.org/wiki/File:Webysther_20190306142828_-_Pra%C3%A7a_da_S%C3%A9.jpg",
+  "lugar": "Praça da Sé, Centro de São Paulo",
+  "kb": 381
+ },
+ "st-2": {
+  "arquivo": "assets/lugares/st-2.jpg",
+  "titulo": "File:Ponte Octávio Frias de Oliveira, São Paulo, Brasil.jpg",
+  "autor": "ikedaleo",
+  "licenca": "CC0",
+  "pagina": "https://commons.wikimedia.org/wiki/File:Ponte_Oct%C3%A1vio_Frias_de_Oliveira,_S%C3%A3o_Paulo,_Brasil.jpg",
+  "lugar": "Ponte Octávio Frias de Oliveira, na Av. das Nações Unidas",
+  "kb": 243
+ },
+ "st-3": {
+  "arquivo": "assets/lugares/st-3.jpg",
+  "titulo": "File:Rodovia Rio Santos.JPG",
+  "autor": "Cacobianchi",
+  "licenca": "Public domain",
+  "pagina": "https://commons.wikimedia.org/wiki/File:Rodovia_Rio_Santos.JPG",
+  "lugar": "Rodovia Rio–Santos (BR-101)",
+  "kb": 119
+ },
+ "st-4": {
+  "arquivo": "assets/lugares/st-4.jpg",
+  "titulo": "File:Jardim Europa, São Paulo - State of São Paulo, Brazil - panoramio (1).jpg",
+  "autor": "José Marques de Oliv…",
+  "licenca": "CC BY-SA 3.0",
+  "pagina": "https://commons.wikimedia.org/wiki/File:Jardim_Europa,_S%C3%A3o_Paulo_-_State_of_S%C3%A3o_Paulo,_Brazil_-_panoramio_(1).jpg",
+  "lugar": "Jardim Europa, São Paulo",
+  "kb": 223
+ },
+ "st-5": {
+  "arquivo": "assets/lugares/st-5.jpg",
+  "titulo": "File:Brooklin Novo - São Paulo - 2017 3.jpg",
+  "autor": "Pedu0303",
+  "licenca": "CC0",
+  "pagina": "https://commons.wikimedia.org/wiki/File:Brooklin_Novo_-_S%C3%A3o_Paulo_-_2017_3.jpg",
+  "lugar": "Brooklin e região da Berrini, zona sul",
+  "kb": 276
+ },
+ "st-6": {
+  "arquivo": "assets/lugares/st-6.jpg",
+  "titulo": "File:Marginal Tietê 20231215 05.jpg",
+  "autor": "Sintegrity",
+  "licenca": "CC BY-SA 4.0",
+  "pagina": "https://commons.wikimedia.org/wiki/File:Marginal_Tiet%C3%AA_20231215_05.jpg",
+  "lugar": "Rio Tietê e Marginal Tietê",
+  "kb": 141
+ },
+ "st-7": {
+  "arquivo": "assets/lugares/st-7.jpg",
+  "titulo": "File:Teatro Municipal de São Paulo 8.jpg",
+  "autor": "Wilfredor",
+  "licenca": "CC0",
+  "pagina": "https://commons.wikimedia.org/wiki/File:Teatro_Municipal_de_S%C3%A3o_Paulo_8.jpg",
+  "lugar": "Theatro Municipal de São Paulo",
+  "kb": 196
+ },
+ "st-8": {
+  "arquivo": "assets/lugares/st-8.jpg",
+  "titulo": "File:Vila Ferroviária de Paranapiacaba por Rodrigo Tetsuo Argenton (01).jpg",
+  "autor": "Rodrigo Tetsuo Argenton",
+  "licenca": "CC BY-SA 4.0",
+  "pagina": "https://commons.wikimedia.org/wiki/File:Vila_Ferrovi%C3%A1ria_de_Paranapiacaba_por_Rodrigo_Tetsuo_Argenton_(01).jpg",
+  "lugar": "Paranapiacaba, no alto da Serra do Mar",
+  "kb": 253
+ }
+}

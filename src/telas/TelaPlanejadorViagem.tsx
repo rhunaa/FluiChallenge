@@ -1,547 +1,123 @@
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { Texto as Text } from '../componentes/Texto';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
-import { gradients, radius, shadow, spacing, typography } from '../tema/tema';
-import { usarTema } from '../contexto/ContextoTema';
-import { estacoes } from '../dados/estacoes';
-import { planejarRota, estimarDuracaoViagemMin, formatarDuracaoMin } from '../dados/planejadorRota';
-import { Chip } from '../componentes/Chip';
-import { SecaoFiltro } from '../componentes/SecaoFiltro';
-import { Estacao } from '../tipos';
+import { Texto } from '../componentes/Texto';
+import { estacoes, buscarEstacaoPorId } from '../dados/estacoes';
+import { planejarRota } from '../dados/planejadorRota';
+import { usarAutenticacao } from '../contexto/ContextoAutenticacao';
+import { usarViagem } from '../contexto/ContextoViagem';
+import { buscarEstacoes } from '../utilitarios/filtrarEstacoes';
+import { Pagina, Campo, Botao, Mensagem, Opcao, Vazio, linha } from '../componentes/Interface';
+import { Faixa, Numero, Overline, Palco, SeparadorFaixa, usarCoresTela } from '../componentes/AssinaturaFlui';
 
-const AUTONOMIAS_KM = [3, 5, 8, 12, 20];
+type TipoNo = 'origem' | 'parada' | 'destino';
 
-function potenciaMaxima(estacao: { connectors: { powerKw: number }[] }): number {
-  return Math.max(...estacao.connectors.map((c) => c.powerKw));
-}
-
-export default function TelaPlanejadorViagem() {
-  const navigation = useNavigation<any>();
-  const { colors } = usarTema();
-  const styles = criarEstilos(colors);
-  const [destinoId, setDestinoId] = useState<string | null>(null);
-  const [autonomia, setAutonomia] = useState<number | null>(null);
-  const [busca, setBusca] = useState('');
-
-  const destinosDisponiveis = useMemo(
-    () => estacoes.filter((e) => e.status !== 'offline').sort((a, b) => a.distanceKm - b.distanceKm),
-    [],
-  );
-
-  const destinosFiltrados = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-    if (!termo) return destinosDisponiveis;
-    return destinosDisponiveis.filter(
-      (e) => e.name.toLowerCase().includes(termo) || e.address.toLowerCase().includes(termo),
-    );
-  }, [destinosDisponiveis, busca]);
-
-  const destino = estacoes.find((e) => e.id === destinoId) ?? null;
-  const resultado = useMemo(() => {
-    if (!destino || !autonomia) return null;
-    return planejarRota(destino, autonomia, estacoes);
-  }, [destino, autonomia]);
-
-  function recomecar() {
-    setDestinoId(null);
-    setAutonomia(null);
-    setBusca('');
-  }
-
-  function iniciarViagem() {
-    if (!resultado || !resultado.viavel || !destino) return;
-    const primeiraParada: Estacao = resultado.paradas[0]?.estacao ?? destino;
-    navigation.navigate('Tabs', { screen: 'Map', params: { focusStationId: primeiraParada.id } });
-  }
-
+/* No do itinerario da prancha: ponto grafite com anel lavanda; parada em lima com raio; destino em energia. */
+function No({ tipo, marca, titulo, linhas, children }: { tipo: TipoNo; marca: string; titulo: string; linhas: string[]; children?: React.ReactNode }) {
+  const ponto = tipo === 'parada' ? { backgroundColor: '#C0F589', borderColor: '#242428' } : tipo === 'destino' ? { backgroundColor: '#8B4DF0', borderColor: '#E6DCFF' } : { backgroundColor: '#242428', borderColor: '#C9B6FF' };
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={gradients.hero} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerTopRow}>
-            <Pressable
-              onPress={() => navigation.goBack()}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel="Voltar"
-            >
-              <Ionicons name="arrow-back" size={20} color={colors.onPrimary} />
-            </Pressable>
-          </View>
-          <Text style={styles.headerTitle} accessibilityRole="header" allowFontScaling>
-            Planejador de viagem
-          </Text>
-          <Text style={styles.headerSubtitle} allowFontScaling>
-            Descubra onde parar para recarregar no caminho
-          </Text>
-        </SafeAreaView>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInUp.duration(400)} style={styles.section}>
-          <Text style={styles.sectionTitle} accessibilityRole="header" allowFontScaling>
-            Para onde você vai?
-          </Text>
-          {destino ? (
-            <View style={styles.selectedStation}>
-              <Text style={styles.selectedStationText} allowFontScaling numberOfLines={1}>
-                {destino.name}
-              </Text>
-              <Pressable
-                onPress={() => {
-                  setDestinoId(null);
-                  setBusca('');
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Trocar destino selecionado"
-              >
-                <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-              </Pressable>
-            </View>
-          ) : (
-            <>
-              <View style={[styles.searchBar, shadow.card]}>
-                <Ionicons name="search" size={18} color={colors.textMuted} />
-                <TextInput
-                  value={busca}
-                  onChangeText={setBusca}
-                  placeholder="Buscar posto por nome ou endereço..."
-                  placeholderTextColor={colors.textMuted}
-                  style={styles.searchInput}
-                  allowFontScaling
-                  accessibilityLabel="Buscar posto de destino por nome ou endereço"
-                  returnKeyType="search"
-                  autoCorrect={false}
-                />
-                {busca.length > 0 && (
-                  <Pressable
-                    onPress={() => setBusca('')}
-                    hitSlop={10}
-                    accessibilityRole="button"
-                    accessibilityLabel="Limpar busca"
-                  >
-                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-                  </Pressable>
-                )}
-              </View>
-
-              {busca.trim().length > 0 &&
-                (destinosFiltrados.length === 0 ? (
-                  <Text style={styles.semResultadoText} allowFontScaling>
-                    Nenhum posto encontrado para "{busca}".
-                  </Text>
-                ) : (
-                  destinosFiltrados.map((e) => (
-                    <Pressable
-                      key={e.id}
-                      onPress={() => setDestinoId(e.id)}
-                      style={styles.suggestionRow}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Selecionar ${e.name}`}
-                    >
-                      <Ionicons name="location-outline" size={16} color={colors.primary} />
-                      <Text style={styles.suggestionText} allowFontScaling numberOfLines={1}>
-                        {e.name} — {e.address}
-                      </Text>
-                    </Pressable>
-                  ))
-                ))}
-            </>
-          )}
-        </Animated.View>
-
-        <SecaoFiltro title="Autonomia restante do seu carro" index={1}>
-          {AUTONOMIAS_KM.map((km) => (
-            <Chip key={km} label={`${km} km`} selected={autonomia === km} onPress={() => setAutonomia(km)} />
-          ))}
-        </SecaoFiltro>
-
-        {!resultado && (
-          <View style={styles.dicaCard}>
-            <Ionicons name="information-circle-outline" size={18} color={colors.textOnDarkMuted} />
-            <Text style={styles.dicaText} allowFontScaling>
-              Escolha um destino e sua autonomia restante para calcular as paradas de recarga necessárias.
-            </Text>
-          </View>
-        )}
-
-        {resultado && destino && (
-          <Animated.View entering={FadeIn} style={styles.resultado}>
-            {resultado.viavel ? (
-              <>
-                <View style={[styles.summaryCard, shadow.card]}>
-                  <View style={styles.summaryItem}>
-                    <Text style={styles.summaryValue} allowFontScaling>
-                      {resultado.distanciaTotalKm.toFixed(1)}
-                    </Text>
-                    <Text style={styles.summaryLabel} allowFontScaling>
-                      km totais
-                    </Text>
-                  </View>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryItem}>
-                    <Text style={styles.summaryValue} allowFontScaling>
-                      {resultado.paradas.length}
-                    </Text>
-                    <Text style={styles.summaryLabel} allowFontScaling>
-                      {resultado.paradas.length === 1 ? 'parada' : 'paradas'}
-                    </Text>
-                  </View>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryItem}>
-                    <Text style={styles.summaryValue} allowFontScaling>
-                      {formatarDuracaoMin(estimarDuracaoViagemMin(resultado.distanciaTotalKm, resultado.paradas.length))}
-                    </Text>
-                    <Text style={styles.summaryLabel} allowFontScaling>
-                      estimados
-                    </Text>
-                  </View>
-                </View>
-
-                {resultado.paradas.length === 0 ? (
-                  <View style={styles.avisoCard}>
-                    <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-                    <Text style={styles.avisoText} allowFontScaling>
-                      Sua autonomia é suficiente para chegar direto em {destino.name}, sem paradas.
-                    </Text>
-                  </View>
-                ) : (
-                  <>
-                    <Text style={styles.resultTitle} accessibilityRole="header" allowFontScaling>
-                      Paradas no caminho
-                    </Text>
-
-                    {resultado.paradas.map((etapa, i) => (
-                      <Pressable
-                        key={etapa.estacao.id}
-                        onPress={() => navigation.navigate('StationDetail', { stationId: etapa.estacao.id })}
-                        style={styles.etapaCard}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Parada ${i + 1}, ${etapa.estacao.name}, ${etapa.distanciaTrechoKm.toFixed(1)} quilômetros desde a última parada, recarga até ${potenciaMaxima(etapa.estacao)} kW`}
-                        accessibilityHint="Toque para ver a ficha do posto"
-                      >
-                        <View style={styles.etapaBadge}>
-                          <Text style={styles.etapaBadgeText} allowFontScaling>
-                            {i + 1}
-                          </Text>
-                        </View>
-                        <View style={styles.etapaInfo}>
-                          <Text style={styles.etapaName} allowFontScaling numberOfLines={1}>
-                            {etapa.estacao.name}
-                          </Text>
-                          <Text style={styles.etapaMeta} allowFontScaling>
-                            +{etapa.distanciaTrechoKm.toFixed(1)} km · recarga completa até {potenciaMaxima(etapa.estacao)} kW
-                          </Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                      </Pressable>
-                    ))}
-
-                    <View style={[styles.etapaCard, styles.etapaFinal]}>
-                      <View style={[styles.etapaBadge, styles.etapaBadgeFinal]}>
-                        <Ionicons name="flag" size={14} color={colors.onPrimary} />
-                      </View>
-                      <View style={styles.etapaInfo}>
-                        <Text style={styles.etapaName} allowFontScaling numberOfLines={1}>
-                          {destino.name}
-                        </Text>
-                        <Text style={styles.etapaMeta} allowFontScaling>
-                          +{resultado.trechoFinalKm.toFixed(1)} km desde a última parada · destino final
-                        </Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.disclaimer} allowFontScaling>
-                      Rota estimada com base na distância em linha reta até cada posto e velocidade média urbana —
-                      use como referência, não como trajeto exato.
-                    </Text>
-                  </>
-                )}
-              </>
-            ) : (
-              <View style={[styles.avisoCard, styles.avisoCardAlerta]}>
-                <Ionicons name="warning" size={20} color={colors.danger} />
-                <Text style={styles.avisoText} allowFontScaling>
-                  Nenhum posto está ao alcance para continuar a viagem com {autonomia} km de autonomia. Tente
-                  aumentar a autonomia ou escolher um destino mais próximo.
-                </Text>
-              </View>
-            )}
-
-            <Pressable
-              onPress={recomecar}
-              style={styles.recomecarButton}
-              accessibilityRole="button"
-              accessibilityLabel="Recomeçar planejamento"
-            >
-              <Ionicons name="refresh" size={16} color={colors.primary} />
-              <Text style={styles.recomecarText} allowFontScaling>
-                Recomeçar
-              </Text>
-            </Pressable>
-          </Animated.View>
-        )}
-      </ScrollView>
-
-      {resultado?.viavel && destino && (
-        <Animated.View entering={FadeIn} style={[styles.ctaBar, shadow.floating]}>
-          <Pressable
-            onPress={iniciarViagem}
-            style={styles.ctaButton}
-            accessibilityRole="button"
-            accessibilityLabel={`Iniciar viagem até ${destino.name}`}
-          >
-            <Ionicons name="navigate" size={18} color={colors.onPrimary} />
-            <Text style={styles.ctaText} allowFontScaling>
-              Iniciar viagem
-            </Text>
-          </Pressable>
-        </Animated.View>
-      )}
+    <View style={{ flexDirection: 'row', gap: 14, paddingVertical: 6 }}>
+      <View style={{ width: 25, height: 25, borderRadius: 13, borderWidth: 3, alignItems: 'center', justifyContent: 'center', ...ponto }}>
+        {tipo === 'parada' ? <Ionicons name="flash" size={12} color="#121116" /> : null}
+      </View>
+      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+        <Overline cor={tipo === 'parada' ? '#C0F589' : '#C9B6FF'} espaco={1}>{marca}</Overline>
+        <Texto accessibilityRole="header" aria-level={3} style={{ fontSize: 15, fontWeight: '600', color: '#EEEDF8' }}>{titulo}</Texto>
+        {linhas.map((l) => (
+          <Texto key={l} style={{ fontSize: 12, lineHeight: 17, color: '#A9A6B8' }}>{l}</Texto>
+        ))}
+        {children}
+      </View>
     </View>
   );
 }
 
-const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    header: {
-      paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.xl,
-      borderBottomLeftRadius: radius.xl,
-      borderBottomRightRadius: radius.xl,
-    },
-    headerTopRow: {
-      flexDirection: 'row',
-      marginTop: spacing.sm,
-      marginBottom: spacing.md,
-    },
-    iconButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: 'rgba(255,255,255,0.18)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    headerTitle: {
-      ...typography.h1,
-      color: colors.textOnGradient,
-    },
-    headerSubtitle: {
-      ...typography.body,
-      color: colors.textOnGradientMuted,
-      marginTop: 2,
-      marginBottom: spacing.lg,
-    },
-    content: {
-      padding: spacing.lg,
-      paddingBottom: 160,
-      width: '100%',
-      maxWidth: 560,
-      alignSelf: 'center',
-    },
-    section: {
-      marginBottom: spacing.lg,
-    },
-    sectionTitle: {
-      ...typography.h3,
-      color: colors.textOnDark,
-      marginBottom: spacing.sm,
-    },
-    searchBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      backgroundColor: colors.surface,
-      borderRadius: radius.pill,
-      paddingHorizontal: spacing.lg,
-      height: 48,
-      marginBottom: spacing.md,
-    },
-    searchInput: {
-      ...typography.body,
-      color: colors.textPrimary,
-      flex: 1,
-      height: '100%',
-    },
-    semResultadoText: {
-      ...typography.caption,
-      color: colors.textOnDarkMuted,
-    },
-    selectedStation: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: colors.surface,
-      borderRadius: radius.md,
-      padding: spacing.md,
-    },
-    selectedStationText: {
-      ...typography.bodyMedium,
-      color: colors.textPrimary,
-      flex: 1,
-      marginRight: spacing.sm,
-    },
-    suggestionRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      backgroundColor: colors.surface,
-      padding: spacing.md,
-      borderTopWidth: 1,
-      borderTopColor: colors.borderLight,
-    },
-    suggestionText: {
-      ...typography.caption,
-      color: colors.textPrimary,
-      flex: 1,
-    },
-    ctaBar: {
-      position: 'absolute',
-      left: spacing.lg,
-      right: spacing.lg,
-      bottom: spacing.xl,
-    },
-    ctaButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.sm,
-      backgroundColor: colors.primary,
-      borderRadius: radius.pill,
-      paddingVertical: spacing.md,
-    },
-    ctaText: {
-      ...typography.bodyMedium,
-      color: colors.onPrimary,
-    },
-    dicaCard: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: spacing.sm,
-      backgroundColor: 'rgba(255,255,255,0.06)',
-      borderRadius: radius.lg,
-      padding: spacing.md,
-      marginTop: spacing.sm,
-    },
-    dicaText: {
-      ...typography.caption,
-      color: colors.textOnDarkMuted,
-      flex: 1,
-    },
-    resultado: {
-      marginTop: spacing.sm,
-    },
-    summaryCard: {
-      flexDirection: 'row',
-      backgroundColor: colors.surface,
-      borderRadius: radius.lg,
-      paddingVertical: spacing.lg,
-      marginBottom: spacing.lg,
-      alignItems: 'center',
-    },
-    summaryItem: {
-      flex: 1,
-      alignItems: 'center',
-    },
-    summaryValue: {
-      ...typography.h3,
-      color: colors.textPrimary,
-    },
-    summaryLabel: {
-      ...typography.small,
-      color: colors.textSecondary,
-      marginTop: 2,
-    },
-    summaryDivider: {
-      width: 1,
-      height: 32,
-      backgroundColor: colors.borderLight,
-    },
-    recomecarButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      paddingVertical: spacing.md,
-      marginTop: spacing.sm,
-    },
-    recomecarText: {
-      ...typography.bodyMedium,
-      color: colors.primary,
-    },
-    resultTitle: {
-      ...typography.h3,
-      color: colors.textOnDark,
-      marginBottom: spacing.md,
-    },
-    etapaCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colors.surface,
-      borderRadius: radius.lg,
-      padding: spacing.md,
-      marginBottom: spacing.sm,
-    },
-    etapaFinal: {
-      backgroundColor: colors.primaryLight,
-    },
-    etapaBadge: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: colors.primaryLight,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: spacing.md,
-    },
-    etapaBadgeFinal: {
-      backgroundColor: colors.primary,
-    },
-    etapaBadgeText: {
-      ...typography.small,
-      color: colors.primaryDark,
-    },
-    etapaInfo: {
-      flex: 1,
-      marginRight: spacing.sm,
-    },
-    etapaName: {
-      ...typography.bodyMedium,
-    },
-    etapaMeta: {
-      ...typography.caption,
-      marginTop: 2,
-    },
-    disclaimer: {
-      ...typography.small,
-      color: colors.textOnDarkMuted,
-      marginTop: spacing.sm,
-      textAlign: 'center',
-    },
-    avisoCard: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: spacing.sm,
-      backgroundColor: colors.successLight,
-      borderRadius: radius.lg,
-      padding: spacing.md,
-    },
-    avisoCardAlerta: {
-      backgroundColor: colors.dangerLight,
-    },
-    avisoText: {
-      ...typography.caption,
-      color: colors.textPrimary,
-      flex: 1,
-    },
-  });
+/* Planejador da prancha r7: campos sobre o fundo e o resultado num palco com faixa de tres numeros e itinerario em linha. */
+export function TelaPlanejadorViagem() {
+  const [allSuggestions, setAllSuggestions] = useState(false);
+  const nav = useNavigation<any>();
+  const { usuario } = usarAutenticacao();
+  const { plano, salvarPlano } = usarViagem();
+  const { txt, txt2 } = usarCoresTela();
+  const [id, setId] = useState<string | undefined>(plano?.destinoId);
+  const [query, setQuery] = useState(plano ? buscarEstacaoPorId(plano.destinoId)?.name || '' : '');
+  const [range, setRange] = useState(String(plano?.autonomiaKm || usuario?.autonomiaKm || 80));
+  const n = Number(range.replace(',', '.'));
+  const valid = /^\d{1,4}([.,]\d{1,2})?$/.test(range) && n >= 1 && n <= 1500;
+  const destination = buscarEstacaoPorId(id || '');
+  const result = plano !== null && plano.destinoId === id && plano.tipoConector === usuario?.tipoConector ? plano.resultado : null;
+  const suggestions = !id ? buscarEstacoes(estacoes, query).slice(0, 8) : [];
+  const lista = allSuggestions || query.trim() ? suggestions : suggestions.slice(0, 3);
+  const mapa = (stationId: string) => nav.navigate('Tabs', { screen: 'Map', params: { focusStationId: stationId, focusRequestId: Date.now() } });
+  const change = (t: string) => {
+    setRange(t);
+    salvarPlano(null);
+  };
+  return (
+    <Pagina title="Planejar viagem" subtitle="Paradas calculadas com os dados do cenário." back profile={false} clima="planejador">
+      <Campo label="Destino do cenário" value={query} onChangeText={(t) => { setQuery(t); setId(undefined); salvarPlano(null); }} placeholder="Procure um posto pelo nome ou endereço" icone="location-outline" help="Saída do marco zero (km 0) do corredor demonstrativo." />
+      {lista.map((s) => (
+        <Botao key={s.id} variant="secondary" label={`${s.name} · marco ${s.demoRouteKm} km`} onPress={() => { setId(s.id); setQuery(s.name); salvarPlano(null); }} />
+      ))}
+      {!id && !query.trim() && suggestions.length > 3 ? <Botao variant="secondary" label={allSuggestions ? 'Mostrar menos destinos' : 'Ver todos os destinos do cenário'} onPress={() => setAllSuggestions((v) => !v)} /> : null}
+      {!id && query.trim().length > 0 && !suggestions.length ? <Mensagem>Nenhum destino encontrado. Tente outro nome ou endereço.</Mensagem> : null}
+      <Campo label="Autonomia informada para o cenário (km)" value={range} onChangeText={change} keyboardType="decimal-pad" maxLength={8} icone="battery-half-outline" help="Valor manual entre 1 e 1500 km, não medido pelo veículo." />
+      <View style={linha}>
+        {[40, 80, 120].map((v) => (
+          <Opcao key={v} label={`${v} km`} onPress={() => change(String(v))} />
+        ))}
+      </View>
+      <Texto style={{ fontSize: 13, lineHeight: 19, color: txt2 }}>{`Conector: ${usuario?.tipoConector ?? '—'} · margem de segurança: 10%.`}</Texto>
+      <Botao label="Planejar neste cenário" icon="navigate" disabled={!destination || !valid} onPress={() => { if (destination && usuario) salvarPlano({ destinoId: destination.id, autonomiaKm: n, tipoConector: usuario.tipoConector, resultado: planejarRota(destination, n, estacoes, { tipoConector: usuario.tipoConector, margemSeguranca: 0.1 }) }); }} />
+      {result ? (
+        result.viavel ? (
+          <Palco>
+            <Overline>ITINERÁRIO DO CENÁRIO</Overline>
+            <Texto accessibilityRole="header" aria-level={2} style={{ fontSize: 21, fontWeight: '600', letterSpacing: -0.3, color: '#EEEDF8' }}>Planejamento viável neste cenário</Texto>
+            <Faixa>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Numero valor={String(result.distanciaTotalKm)} unidade=" km" tamanho={32} />
+                <Overline espaco={1}>distância</Overline>
+              </View>
+              <SeparadorFaixa />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Numero valor={String(result.paradas.length)} tamanho={32} />
+                <Overline espaco={1}>{result.paradas.length === 1 ? 'parada' : 'paradas'}</Overline>
+              </View>
+              <SeparadorFaixa />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Numero valor={(n * 0.9).toFixed(0)} unidade=" km" tamanho={32} />
+                <Overline espaco={1}>por trecho</Overline>
+              </View>
+            </Faixa>
+            <Texto style={{ fontSize: 12, lineHeight: 17, color: '#A9A6B8' }}>{`${result.distanciaTotalKm} km modelados · ${result.paradas.length} ${result.paradas.length === 1 ? 'parada' : 'paradas'} · alcance útil de ${(n * 0.9).toFixed(1).replace('.', ',')} km por trecho.`}</Texto>
+            <View>
+              <LinearGradient pointerEvents="none" colors={['#8B4DF0', '#C9B6FF']} style={{ position: 'absolute', left: 11, top: 16, bottom: 16, width: 3, borderRadius: 2 }} />
+              <No tipo="origem" marca="ORIGEM" titulo="Você" linhas={['Marco zero · km 0', `${range} km informados`]} />
+              {result.paradas.map((step, i) => (
+                <No key={step.estacao.id} tipo="parada" marca={`PARADA ${i + 1} · MARCO ${step.estacao.demoRouteKm} KM`} titulo={step.estacao.name} linhas={[`Trecho de ${step.distanciaTrechoKm} km no corredor`, `${step.conector.type} · ${step.conector.powerKw} kW · disponível no exemplo.`]}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                    <Botao compacto variant="secondary" label="Ver ficha desta parada" onPress={() => nav.navigate('StationDetail', { stationId: step.estacao.id })} />
+                    <Botao compacto variant="secondary" label="Ver esta parada no mapa" onPress={() => mapa(step.estacao.id)} />
+                  </View>
+                </No>
+              ))}
+              <No tipo="destino" marca="DESTINO" titulo={destination?.name ?? 'Destino'} linhas={[`Trecho final: ${result.trechoFinalKm} km modelados.`]}>
+                <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                  <Botao compacto variant="secondary" label="Ver destino no mapa" onPress={() => id && mapa(id)} />
+                </View>
+              </No>
+            </View>
+          </Palco>
+        ) : (
+          <Vazio titulo="Não é viável neste cenário" descricao={result.motivo || 'Revise a autonomia e o conector.'} acao={{ label: 'Editar meu veículo', onPress: () => nav.navigate('Tabs', { screen: 'Profile' }) }} />
+        )
+      ) : null}
+      {result && result.viavel ? <Mensagem>Este resultado não inicia uma viagem real. Seu itinerário fica preservado nesta sessão ao consultar a ficha ou o mapa.</Mensagem> : null}
+      <Texto style={{ fontSize: 12, lineHeight: 17, color: txt2 }}>Corredor demonstrativo, não uma rota viária. Distâncias modeladas; sem duração ou custo estimados. A autonomia informada é reutilizada após cada parada, sem modelar energia recebida.</Texto>
+    </Pagina>
+  );
+}
+export default TelaPlanejadorViagem;

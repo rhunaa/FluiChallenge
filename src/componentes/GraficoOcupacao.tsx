@@ -1,105 +1,25 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Texto as Text } from './Texto';
-import Animated, { FadeInUp } from 'react-native-reanimated';
-import { radius, spacing, typography } from '../tema/tema';
-import { usarTema } from '../contexto/ContextoTema';
-import { obterHorarioMenosMovimentado } from '../dados/estacoes';
+import { View } from 'react-native';
+import { Texto } from './Texto';
 
-const CHART_HEIGHT = 64;
-const LABELED_HOURS = [0, 6, 12, 18, 23];
-
-export function GraficoOcupacao({ hourlyOccupancy }: { hourlyOccupancy: number[] }) {
-  const { colors } = usarTema();
-  const styles = criarEstilos(colors);
-  const quiet = obterHorarioMenosMovimentado(hourlyOccupancy);
-
+/* Ocupacao ilustrativa dentro de cartao claro: barras em energia, pico em energia escura. */
+export function GraficoOcupacao({ occupancy }: { occupancy: number[] }) {
+  if (occupancy.length !== 24 || occupancy.some((n) => !Number.isFinite(n)))
+    return <Texto style={{ color: '#4E4C58', fontSize: 14 }}>Curva de ocupação não informada.</Texto>;
+  const pico = Math.max(...occupancy);
   return (
-    <View>
-      <View style={styles.chartRow}>
-        {hourlyOccupancy.map((value, hour) => {
-          const isQuiet = hour >= quiet.start && hour < quiet.start + 3;
-          return (
-            <Animated.View
-              key={hour}
-              entering={FadeInUp.delay(hour * 18).duration(300)}
-              style={styles.barTrack}
-            >
-              <View
-                style={[
-                  styles.bar,
-                  {
-                    height: Math.max(4, value * CHART_HEIGHT),
-                    backgroundColor: isQuiet ? colors.primary : colors.borderLight,
-                  },
-                ]}
-              />
-            </Animated.View>
-          );
-        })}
-      </View>
-      <View style={styles.axisRow}>
-        {LABELED_HOURS.map((h) => (
-          <Text key={h} style={styles.axisLabel} allowFontScaling>
-            {h}h
-          </Text>
+    <View style={{ gap: 10 }}>
+      <View accessible accessibilityRole="image" accessibilityLabel={'Ocupação ilustrativa por hora: ' + occupancy.map((n, h) => `${h} horas, ${Math.round(n * 100)} por cento`).join('; ')} style={{ height: 90, flexDirection: 'row', alignItems: 'flex-end', gap: 3 }}>
+        {occupancy.map((n, h) => (
+          <View key={h} style={{ flex: 1, height: Math.max(4, Math.min(1, Math.max(0, n)) * 85), backgroundColor: n === pico ? '#5B2BBF' : '#8B4DF0', borderTopLeftRadius: 3, borderTopRightRadius: 3 }} />
         ))}
       </View>
-
-      <View style={styles.quietBanner}>
-        <View style={styles.quietDot} />
-        <Text style={styles.quietText} allowFontScaling>
-          Menor movimento entre {quiet.start}h e {quiet.start + 3}h
-        </Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        {['00h', '06h', '12h', '18h', '23h'].map((l) => (
+          <Texto key={l} style={{ fontSize: 11, color: '#4E4C58' }}>{l}</Texto>
+        ))}
       </View>
+      <Texto style={{ fontSize: 12, lineHeight: 17, color: '#4E4C58' }}>Curva de exemplo. Não é uma previsão de fila ou disponibilidade em tempo real.</Texto>
     </View>
   );
 }
-
-const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
-  chartRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    height: CHART_HEIGHT,
-    gap: 2,
-  },
-  barTrack: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    height: CHART_HEIGHT,
-  },
-  bar: {
-    width: '70%',
-    borderRadius: 3,
-  },
-  axisRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.xs,
-  },
-  axisLabel: {
-    ...typography.small,
-    color: colors.textMuted,
-  },
-  quietBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginTop: spacing.md,
-  },
-  quietDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  quietText: {
-    ...typography.caption,
-    color: colors.primaryDark,
-    fontWeight: '600',
-  },
-});

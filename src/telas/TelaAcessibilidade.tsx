@@ -1,17 +1,14 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import { View } from 'react-native';
 import { Texto } from '../componentes/Texto';
+import { FaixaFlui } from '../componentes/PaineisFlui';
 import { usarTema } from '../contexto/ContextoTema';
-import { radius, shadow, spacing, typography } from '../tema/tema';
+import { Capitulo, usarCoresTela } from '../componentes/AssinaturaFlui';
+import { Pagina, Botao, Mensagem } from '../componentes/Interface';
 
-export default function TelaAcessibilidade() {
-  const navigation = useNavigation<any>();
+/* Acessibilidade r7: três capítulos sobre o fundo vivo; a prévia "Aa" fica num cartão claro. */
+export function TelaAcessibilidade() {
   const {
-    colors,
     modo,
     alternarModo,
     fontScaleLabel,
@@ -20,210 +17,83 @@ export default function TelaAcessibilidade() {
     podeAumentarFonte,
     podeDiminuirFonte,
   } = usarTema();
-  const styles = criarEstilos(colors);
-
+  const { txt, txt2, cartao, bordaCartao } = usarCoresTela();
+  const apoio = { fontSize: 14, lineHeight: 20, color: txt2 };
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.topRow}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-            accessibilityRole="button"
-            accessibilityLabel="Voltar"
-          >
-            <Ionicons name="arrow-back" size={18} color={colors.textOnDark} />
-          </Pressable>
-        </View>
+    <Pagina title="Acessibilidade" back profile={false}>
+      <FaixaFlui
+        icon="accessibility-outline"
+        label="DO SEU JEITO"
+        value="Um Flui mais confortável"
+        detail="Texto, aparência e navegação para você"
+      />
 
-        <View style={styles.avatar}>
-          <Ionicons name="settings" size={30} color={colors.onPrimary} />
-        </View>
-        <Texto style={styles.title} accessibilityRole="header">
-          Acessibilidade
+      <Capitulo num="01" titulo="Tamanho do texto" />
+      <View
+        style={{
+          backgroundColor: cartao,
+          borderColor: bordaCartao,
+          borderWidth: 1,
+          borderRadius: 24,
+          padding: 18,
+          gap: 4,
+        }}
+      >
+        <Texto style={{ fontSize: 26, fontWeight: '600', letterSpacing: -0.6, color: '#5B2BBF' }}>
+          Aa
         </Texto>
-        <Texto style={styles.subtitle}>Ajuste o app do seu jeito.</Texto>
+        <Texto style={{ fontSize: 15, lineHeight: 21, color: '#1B1A20' }}>
+          Energia para o seu caminho.
+        </Texto>
+      </View>
+      <Texto style={apoio}>
+        A escala também se aplica aos campos de entrada. Os controles permanecem na rolagem,
+        sem cobrir o conteúdo.
+      </Texto>
+      <Mensagem>Escala atual: {fontScaleLabel}</Mensagem>
+      <View style={{ gap: 12, flexDirection: 'row', flexWrap: 'wrap' }}>
+        <Botao
+          variant="secondary"
+          label="Diminuir fonte"
+          icon="remove-outline"
+          disabled={!podeDiminuirFonte}
+          onPress={diminuirFonte}
+        />
+        <Botao
+          variant="secondary"
+          label="Aumentar fonte"
+          icon="add-outline"
+          disabled={!podeAumentarFonte}
+          onPress={aumentarFonte}
+        />
+      </View>
 
-        <Animated.View entering={FadeInUp.springify().damping(16)} style={[styles.card, shadow.card]}>
-          <View style={styles.cardRow}>
-            <View style={styles.iconRing}>
-              <Ionicons name="text" size={20} color={colors.primary} />
-            </View>
-            <View style={styles.cardText}>
-              <Texto style={styles.cardTitle}>Tamanho do texto</Texto>
-              <Texto style={styles.cardDescription}>Atual: {fontScaleLabel}</Texto>
-            </View>
-          </View>
-          <View style={styles.stepperRow}>
-            <Pressable
-              onPress={diminuirFonte}
-              disabled={!podeDiminuirFonte}
-              style={[styles.stepperButton, !podeDiminuirFonte && styles.stepperButtonDisabled]}
-              accessibilityRole="button"
-              accessibilityLabel="Diminuir tamanho do texto"
-              accessibilityHint={`Tamanho atual: ${fontScaleLabel}. Toque para diminuir.`}
-              accessibilityState={{ disabled: !podeDiminuirFonte }}
-            >
-              <Ionicons name="remove" size={20} color={colors.onPrimary} />
-            </Pressable>
-            <Texto style={styles.stepperLabel}>{fontScaleLabel}</Texto>
-            <Pressable
-              onPress={aumentarFonte}
-              disabled={!podeAumentarFonte}
-              style={[styles.stepperButton, !podeAumentarFonte && styles.stepperButtonDisabled]}
-              accessibilityRole="button"
-              accessibilityLabel="Aumentar tamanho do texto"
-              accessibilityHint={`Tamanho atual: ${fontScaleLabel}. Toque para aumentar.`}
-              accessibilityState={{ disabled: !podeAumentarFonte }}
-            >
-              <Ionicons name="add" size={20} color={colors.onPrimary} />
-            </Pressable>
-          </View>
-        </Animated.View>
+      <Capitulo num="02" titulo="Aparência" />
+      <Texto style={apoio}>
+        Modo atual: {modo === 'dark' ? 'escuro' : 'claro'}. Os cartões claros preservam a
+        identidade do Flui em ambos.
+      </Texto>
+      <Botao
+        variant="secondary"
+        label={`Ativar modo ${modo === 'dark' ? 'claro' : 'escuro'}`}
+        icon={modo === 'dark' ? 'sunny-outline' : 'moon-outline'}
+        onPress={alternarModo}
+      />
 
-        <Animated.View entering={FadeInUp.delay(70).springify().damping(16)} style={[styles.card, shadow.card]}>
-          <View style={styles.cardRow}>
-            <View style={styles.iconRing}>
-              <Ionicons name={modo === 'dark' ? 'moon' : 'sunny'} size={20} color={colors.primary} />
-            </View>
-            <View style={styles.cardText}>
-              <Texto style={styles.cardTitle}>Aparência</Texto>
-              <Texto style={styles.cardDescription}>
-                {modo === 'dark' ? 'Modo escuro ativado' : 'Modo claro ativado'}
-              </Texto>
-            </View>
-          </View>
-          <Pressable
-            onPress={alternarModo}
-            style={styles.actionButton}
-            accessibilityRole="button"
-            accessibilityLabel={modo === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-            accessibilityState={{ checked: modo === 'light' }}
-          >
-            <Ionicons name={modo === 'dark' ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.onPrimary} />
-            <Texto style={styles.actionButtonText}>
-              Mudar para modo {modo === 'dark' ? 'claro' : 'escuro'}
-            </Texto>
-          </Pressable>
-        </Animated.View>
-      </ScrollView>
-    </SafeAreaView>
+      <Capitulo num="03" titulo="Teclado e movimento" />
+      <Texto style={{ ...apoio, color: txt }}>
+        Use Tab e Shift+Tab para navegar; Enter ou Espaço para ativar controles. O foco tem
+        contorno visível.
+      </Texto>
+      <Texto style={apoio}>
+        Entradas e transições curtas dão feedback, sem animações contínuas. Na web, a
+        preferência de movimento reduzido do sistema reduz ou remove esses efeitos.
+      </Texto>
+      <Texto style={apoio}>
+        Para leitura por voz, utilize o leitor de tela do dispositivo. O Flui não simula uma
+        funcionalidade de voz que não existe.
+      </Texto>
+    </Pagina>
   );
 }
-
-const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) =>
-  StyleSheet.create({
-    safe: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    content: {
-      padding: spacing.lg,
-      paddingBottom: 60,
-      width: '100%',
-      maxWidth: 560,
-      alignSelf: 'center',
-    },
-    topRow: {
-      marginBottom: spacing.sm,
-    },
-    backButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.backgroundElevated,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatar: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-      alignSelf: 'center',
-      marginTop: spacing.md,
-      marginBottom: spacing.lg,
-    },
-    title: {
-      ...typography.h1,
-      color: colors.textOnDark,
-      textAlign: 'center',
-    },
-    subtitle: {
-      ...typography.body,
-      color: colors.textOnDarkMuted,
-      textAlign: 'center',
-      marginTop: spacing.xs,
-      marginBottom: spacing.xl,
-    },
-    card: {
-      backgroundColor: colors.surface,
-      borderRadius: radius.lg,
-      padding: spacing.lg,
-      marginBottom: spacing.md,
-    },
-    cardRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: spacing.md,
-    },
-    iconRing: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: colors.primaryLight,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: spacing.md,
-    },
-    cardText: {
-      flex: 1,
-    },
-    cardTitle: {
-      ...typography.bodyMedium,
-      color: colors.textPrimary,
-      marginBottom: 2,
-    },
-    cardDescription: {
-      ...typography.caption,
-      color: colors.textSecondary,
-    },
-    actionButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.sm,
-      backgroundColor: colors.primary,
-      borderRadius: radius.pill,
-      paddingVertical: spacing.md,
-    },
-    actionButtonText: {
-      ...typography.bodyMedium,
-      color: colors.onPrimary,
-    },
-    stepperRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.md,
-    },
-    stepperButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    stepperButtonDisabled: {
-      backgroundColor: colors.offline,
-    },
-    stepperLabel: {
-      ...typography.bodyMedium,
-      color: colors.textPrimary,
-      flex: 1,
-      textAlign: 'center',
-    },
-  });
+export default TelaAcessibilidade;

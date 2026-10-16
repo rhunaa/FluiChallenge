@@ -1,279 +1,96 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Texto as Text } from '../componentes/Texto';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import { Pressable, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { gradients, radius, spacing, typography } from '../tema/tema';
-import { usarTema } from '../contexto/ContextoTema';
-import { estacoes } from '../dados/estacoes';
-import { ROTULOS_COMODIDADE, ChaveComodidade, TipoConector } from '../tipos';
-import { Chip } from '../componentes/Chip';
-import { AcaoRapida } from '../componentes/AcaoRapida';
-import { SecaoFiltro } from '../componentes/SecaoFiltro';
-import { CartaoEstacao } from '../componentes/CartaoEstacao';
+import { Ionicons } from '@expo/vector-icons';
+import { ChaveComodidade, TipoConector } from '../tipos';
 import { usarFiltros } from '../contexto/ContextoFiltro';
-import { aplicarFiltros } from '../utilitarios/filtrarEstacoes';
+import { usarAutenticacao } from '../contexto/ContextoAutenticacao';
+import { estacoes } from '../dados/estacoes';
+import { aplicarFiltros, FILTROS_PADRAO } from '../utilitarios/filtrarEstacoes';
+import { Pagina, Opcao, Botao, AvisoDemo, Vazio, linha } from '../componentes/Interface';
+import { Texto } from '../componentes/Texto';
+import { FaixaFlui } from '../componentes/PaineisFlui';
+import { CartaoEstacao } from '../componentes/CartaoEstacao';
+import { Capitulo, Secao, usarCoresTela } from '../componentes/AssinaturaFlui';
 
-const CONNECTOR_TYPES: TipoConector[] = ['CCS Combo2', 'CHAdeMO', 'Tipo 2', 'Tesla NACS'];
-const POWER_OPTIONS = [22, 50, 100, 150];
-const AMENITY_OPTIONS: ChaveComodidade[] = ['wifi', 'cafe', 'restroom', 'shopping', 'food', 'parking'];
-
-const OBJECTIVES = [
-  { key: 'home', icon: 'home-outline' as const, label: 'Chegar em casa', preset: {} },
-  { key: 'fast', icon: 'flash-outline' as const, label: 'Recarga rápida', preset: { minPower: 100 } },
-  { key: 'full', icon: 'battery-charging-outline' as const, label: 'Recarga completa', preset: { amenities: ['food', 'restroom'] as ChaveComodidade[] } },
-  { key: 'comfort', icon: 'cafe-outline' as const, label: 'Local confortável', preset: { amenities: ['cafe', 'wifi'] as ChaveComodidade[] } },
+type Icone = keyof typeof Ionicons.glyphMap;
+const tipos: TipoConector[] = ['CCS Combo2', 'CHAdeMO', 'Tipo 2', 'Tesla NACS'];
+const comodidades: [ChaveComodidade, string][] = [
+  ['wifi', 'Wi-Fi'],
+  ['cafe', 'Café'],
+  ['restroom', 'Banheiro'],
+  ['shopping', 'Shopping'],
+  ['food', 'Alimentação'],
+  ['parking', 'Estacionamento'],
 ];
 
-export default function TelaFiltros() {
-  const navigation = useNavigation<any>();
-  const { colors } = usarTema();
-  const styles = criarEstilos(colors);
-  const { filters, setFilters, resetarFiltros } = usarFiltros();
-  const [objective, setObjective] = useState<string | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-
-  const results = useMemo(() => aplicarFiltros(estacoes, filters), [filters]);
-
-  useEffect(() => {
-    setAnalyzing(true);
-    const t = setTimeout(() => setAnalyzing(false), 550);
-    return () => clearTimeout(t);
-  }, [filters]);
-
-  function toggleConnector(type: TipoConector) {
-    setObjective(null);
-    setFilters({
-      ...filters,
-      connectorTypes: filters.connectorTypes.includes(type)
-        ? filters.connectorTypes.filter((t) => t !== type)
-        : [...filters.connectorTypes, type],
-    });
-  }
-
-  function togglePower(power: number) {
-    setObjective(null);
-    setFilters({ ...filters, minPower: filters.minPower === power ? null : power });
-  }
-
-  function toggleAmenity(key: ChaveComodidade) {
-    setObjective(null);
-    setFilters({
-      ...filters,
-      amenities: filters.amenities.includes(key) ? filters.amenities.filter((a) => a !== key) : [...filters.amenities, key],
-    });
-  }
-
-  function toggleHours(mode: 'any' | '24h' | 'commercial') {
-    setObjective(null);
-    setFilters({ ...filters, hoursMode: filters.hoursMode === mode ? 'any' : mode });
-  }
-
-  function selectObjective(o: (typeof OBJECTIVES)[number]) {
-    setObjective(o.key);
-    resetarFiltros();
-    setFilters({
-      connectorTypes: [],
-      minPower: null,
-      amenities: [],
-      hoursMode: 'any',
-      ...o.preset,
-    });
-  }
-
+/* Recarga da r7: modos em cartoes, faixa do perfil e capitulos de filtros sobre o fundo. */
+export function TelaFiltros() {
+  const nav = useNavigation<any>();
+  const { filters: f, setFilters, resetarFiltros } = usarFiltros();
+  const { usuario } = usarAutenticacao();
+  const { cartao, bordaCartao, txt2 } = usarCoresTela();
+  const result = aplicarFiltros(estacoes, f, usuario?.tipoConector);
+  const modos: { label: string; descricao: string; icon: Icone; apply: () => void }[] = [
+    { label: 'Disponíveis', descricao: 'Só conectores livres no cenário', icon: 'checkmark-circle-outline', apply: () => setFilters({ ...FILTROS_PADRAO, onlyAvailable: true }) },
+    { label: '100 kW ou mais', descricao: 'Recarga rápida e livre', icon: 'flash-outline', apply: () => setFilters({ ...FILTROS_PADRAO, minPower: 100, onlyAvailable: true }) },
+    { label: 'Café e Wi-Fi', descricao: 'Para esperar com conforto', icon: 'cafe-outline', apply: () => setFilters({ ...FILTROS_PADRAO, amenities: ['cafe', 'wifi'] }) },
+  ];
+  const nota = (t: string) => <Texto style={{ fontSize: 12, lineHeight: 17, color: txt2 }}>{t}</Texto>;
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={gradients.hero} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerTopRow}>
-            <Pressable
-              onPress={() => navigation.navigate('Map')}
-              style={styles.closeButton}
-              accessibilityRole="button"
-              accessibilityLabel="Fechar filtros"
-              hitSlop={8}
-            >
-              <Ionicons name="close" size={20} color={colors.onPrimary} />
-            </Pressable>
-          </View>
-          <Text style={styles.headerTitle} accessibilityRole="header" allowFontScaling>
-            Filtros de Busca
-          </Text>
-          <Text style={styles.headerSubtitle} allowFontScaling>
-            Qual seu objetivo agora?
-          </Text>
-
-          <View style={styles.objectivesRow}>
-            {OBJECTIVES.map((o) => (
-              <AcaoRapida
-                key={o.key}
-                icon={o.icon}
-                label={o.label}
-                selected={objective === o.key}
-                onPress={() => selectObjective(o)}
-              />
-            ))}
-          </View>
-
-          {analyzing && (
-            <Animated.View
-              entering={FadeIn}
-              style={styles.analyzingCard}
-              accessibilityLiveRegion="polite"
-              accessibilityLabel="Atualizando resultados"
-            >
-              <Ionicons name="options" size={16} color={colors.onPrimary} />
-              <Text style={styles.analyzingText} allowFontScaling>
-                Atualizando resultados...
-              </Text>
-            </Animated.View>
-          )}
-        </SafeAreaView>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <SecaoFiltro title="Tipo de conector" index={0}>
-          {CONNECTOR_TYPES.map((type) => (
-            <Chip key={type} label={type} selected={filters.connectorTypes.includes(type)} onPress={() => toggleConnector(type)} />
-          ))}
-        </SecaoFiltro>
-
-        <SecaoFiltro title="Potência mínima" index={1}>
-          {POWER_OPTIONS.map((p) => (
-            <Chip key={p} label={`${p}+ kW`} selected={filters.minPower === p} onPress={() => togglePower(p)} />
-          ))}
-        </SecaoFiltro>
-
-        <SecaoFiltro title="Comodidades" index={2}>
-          {AMENITY_OPTIONS.map((a) => (
-            <Chip key={a} label={ROTULOS_COMODIDADE[a]} selected={filters.amenities.includes(a)} onPress={() => toggleAmenity(a)} />
-          ))}
-        </SecaoFiltro>
-
-        <SecaoFiltro title="Horário de funcionamento" index={3}>
-          <Chip label="24 horas" selected={filters.hoursMode === '24h'} onPress={() => toggleHours('24h')} />
-          <Chip label="Horário comercial" selected={filters.hoursMode === 'commercial'} onPress={() => toggleHours('commercial')} />
-        </SecaoFiltro>
-
-        <View style={styles.resultsHeader}>
-          <Text style={styles.resultsTitle} accessibilityRole="header" allowFontScaling>
-            Resultados encontrados
-          </Text>
-          <Text style={styles.resultsCount} allowFontScaling>
-            {results.length} {results.length === 1 ? 'posto' : 'postos'}
-          </Text>
-        </View>
-
-        {results.length === 0 ? (
-          <Animated.View entering={FadeInDown} style={styles.emptyState}>
-            <Ionicons name="search-outline" size={28} color={colors.textMuted} />
-            <Text style={styles.emptyText} allowFontScaling>
-              Nenhum posto encontrado com esses filtros. Tente ajustar suas preferências.
-            </Text>
-          </Animated.View>
-        ) : (
-          results.map((station, i) => (
-            <CartaoEstacao
-              key={station.id}
-              station={station}
-              index={i}
-              onPress={() => navigation.getParent()?.navigate('StationDetail', { stationId: station.id })}
-            />
-          ))
-        )}
-      </ScrollView>
-    </View>
+    <Pagina title="Encontrar minha recarga" subtitle="Conectores e comodidades para a sua próxima parada.">
+      <Secao titulo="Modos de recarga" sub="Um toque aplica um conjunto de filtros." />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        {modos.map((m) => (
+          <Pressable key={m.label} accessibilityRole="button" accessibilityLabel={m.label} onPress={m.apply} style={({ pressed }) => ({ flexGrow: 1, flexBasis: 150, minHeight: 104, padding: 16, gap: 10, borderRadius: 24, backgroundColor: cartao, borderWidth: 1, borderColor: bordaCartao, opacity: pressed ? 0.86 : 1 })}>
+            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: '#E6DCFF', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name={m.icon} size={19} color="#5B2BBF" />
+            </View>
+            <Texto style={{ fontSize: 15, fontWeight: '600', color: '#1B1A20' }}>{m.label}</Texto>
+            <Texto style={{ fontSize: 12, lineHeight: 16, color: '#4E4C58' }}>{m.descricao}</Texto>
+          </Pressable>
+        ))}
+      </View>
+      <FaixaFlui label="SEU PERFIL DE RECARGA" value={usuario?.tipoConector || 'Escolha seu veículo'} detail={`${result.length} postos nos filtros · unidades do cenário`} icon="car-outline" />
+      <Secao titulo="Refine sua próxima parada" />
+      <Capitulo num="01" titulo="Compatibilidade e status" />
+      {nota(`Seu veículo: ${usuario?.tipoConector ?? '—'}`)}
+      <View style={linha}>
+        <Opcao label={`Somente compatíveis: ${f.compatibleOnly ? 'sim' : 'não'}`} selected={f.compatibleOnly} onPress={() => setFilters({ ...f, compatibleOnly: !f.compatibleOnly })} />
+        <Opcao label={`Somente disponíveis: ${f.onlyAvailable ? 'sim' : 'não'}`} selected={f.onlyAvailable} onPress={() => setFilters({ ...f, onlyAvailable: !f.onlyAvailable })} />
+      </View>
+      {nota('Tipo, potência e disponibilidade precisam pertencer ao mesmo conector.')}
+      <Capitulo num="02" titulo="Tipo de conector" />
+      {nota('Selecione um ou mais tipos; nenhuma seleção permite qualquer tipo.')}
+      <View style={linha}>
+        {tipos.map((t) => (
+          <Opcao key={t} label={t} selected={f.connectorTypes.includes(t)} onPress={() => setFilters({ ...f, connectorTypes: f.connectorTypes.includes(t) ? f.connectorTypes.filter((x) => x !== t) : [...f.connectorTypes, t] })} />
+        ))}
+      </View>
+      <Capitulo num="03" titulo="Potência mínima" />
+      <View accessibilityRole="radiogroup" accessibilityLabel="Potência mínima" style={linha}>
+        {[null, 50, 100, 150, 300].map((p) => (
+          <Opcao key={String(p)} kind="radio" label={p == null ? 'Qualquer potência' : `${p} kW+`} selected={f.minPower === p} onPress={() => setFilters({ ...f, minPower: p })} />
+        ))}
+      </View>
+      <Capitulo num="04" titulo="Comodidades" />
+      <View style={linha}>
+        {comodidades.map(([k, l]) => (
+          <Opcao key={k} label={l} selected={f.amenities.includes(k)} onPress={() => setFilters({ ...f, amenities: f.amenities.includes(k) ? f.amenities.filter((x) => x !== k) : [...f.amenities, k] })} />
+        ))}
+      </View>
+      <Capitulo num="05" titulo="Funcionamento" />
+      <View accessibilityRole="radiogroup" accessibilityLabel="Funcionamento" style={linha}>
+        {([['any', 'Qualquer horário'], ['24h', '24 horas'], ['commercial', 'Horário limitado']] as const).map(([v, l]) => (
+          <Opcao key={v} kind="radio" label={l} selected={f.hoursMode === v} onPress={() => setFilters({ ...f, hoursMode: v })} />
+        ))}
+      </View>
+      <Botao variant="secondary" label="Limpar filtros" onPress={resetarFiltros} />
+      <Secao titulo={`${result.length} postos nos filtros`} />
+      <Botao label="Ver estes postos no mapa" icon="map-outline" onPress={() => nav.navigate('Map')} />
+      {result.length ? result.map((s) => <CartaoEstacao key={s.id} station={s} onPress={() => nav.navigate('StationDetail', { stationId: s.id })} />) : <Vazio titulo="Nenhum conector atende a tudo" descricao="Reduza a potência, revise os tipos ou altere a compatibilidade. Um conector Tipo 2 de 22 kW não atende a uma busca de 100 kW." acao={{ label: 'Limpar filtros', onPress: resetarFiltros }} />}
+      <AvisoDemo />
+    </Pagina>
   );
 }
-
-const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-    borderBottomLeftRadius: radius.xl,
-    borderBottomRightRadius: radius.xl,
-  },
-  headerTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: spacing.sm,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    ...typography.h1,
-    color: colors.textOnGradient,
-    marginTop: spacing.md,
-  },
-  headerSubtitle: {
-    ...typography.body,
-    color: colors.textOnGradientMuted,
-    marginTop: 2,
-    marginBottom: spacing.lg,
-  },
-  objectivesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  analyzingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginTop: spacing.lg,
-  },
-  analyzingText: {
-    ...typography.caption,
-    color: colors.textOnGradient,
-    flex: 1,
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: 140,
-    width: '100%',
-    maxWidth: 560,
-    alignSelf: 'center',
-  },
-  resultsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-    marginTop: spacing.sm,
-  },
-  resultsTitle: {
-    ...typography.h3,
-    color: colors.textOnDark,
-  },
-  resultsCount: {
-    ...typography.caption,
-    color: colors.textOnDarkMuted,
-  },
-  emptyState: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.xl,
-    backgroundColor: colors.backgroundElevated,
-    borderRadius: radius.lg,
-  },
-  emptyText: {
-    ...typography.caption,
-    color: colors.textOnDarkMuted,
-    textAlign: 'center',
-  },
-});
+export default TelaFiltros;

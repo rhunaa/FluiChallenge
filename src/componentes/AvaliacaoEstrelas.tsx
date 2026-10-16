@@ -1,58 +1,73 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { usarTema } from '../contexto/ContextoTema';
+import { usarCoresTela } from './AssinaturaFlui';
 
-interface AvaliacaoEstrelasProps {
+/* Estrelas r7: cor de energia sobre o fundo vivo, alvo de 44 px; a nota escolhida ganha contorno. */
+export function AvaliacaoEstrelas({
+  value,
+  onChange,
+  size = 22,
+  label = 'avaliação',
+}: {
   value: number;
-  onChange?: (value: number) => void;
+  onChange?: (n: number) => void;
   size?: number;
   label?: string;
-}
-
-export function AvaliacaoEstrelas({ value, onChange, size = 22, label = 'avaliação' }: AvaliacaoEstrelasProps) {
-  const { colors } = usarTema();
-  const interactive = !!onChange;
-  const stars = [1, 2, 3, 4, 5];
-
-  return (
-    <View style={styles.row} accessibilityRole={interactive ? 'adjustable' : undefined}>
-      {stars.map((star) => {
-        const filled = star <= value;
-        const Star = (
+}) {
+  const { energia, controle, controleBorda } = usarCoresTela();
+  if (!onChange)
+    return (
+      <View
+        accessible
+        accessibilityLabel={`${value} de 5 estrelas em ${label}`}
+        style={{ flexDirection: 'row', gap: 3 }}
+      >
+        {[1, 2, 3, 4, 5].map((n) => (
           <Ionicons
-            name={filled ? 'star' : 'star-outline'}
+            key={n}
+            name={n <= value ? 'star' : 'star-outline'}
             size={size}
-            color={filled ? colors.warning : colors.textMuted}
+            color="#5B2BBF"
+            accessible={false}
           />
-        );
-        if (!interactive) {
-          return <View key={star} style={styles.starWrap}>{Star}</View>;
-        }
-        return (
-          <Pressable
-            key={star}
-            onPress={() => onChange?.(star)}
-            hitSlop={6}
-            style={styles.starWrap}
-            accessibilityRole="button"
-            accessibilityLabel={`${star} de 5 estrelas em ${label}`}
-            accessibilityState={{ selected: filled }}
-          >
-            {Star}
-          </Pressable>
-        );
-      })}
+        ))}
+      </View>
+    );
+  return (
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={label}
+      style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}
+    >
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Pressable
+          key={n}
+          accessibilityRole="radio"
+          accessibilityLabel={`${n} de 5 estrelas em ${label}`}
+          accessibilityState={{ checked: n === value }}
+          aria-checked={n === value}
+          onPress={() => onChange(n)}
+          style={({ pressed }) => ({
+            width: 44,
+            height: 44,
+            borderRadius: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1.5,
+            borderColor: n === value ? energia : 'transparent',
+            backgroundColor: n === value ? controle : 'transparent',
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <Ionicons
+            name={n <= value ? 'star' : 'star-outline'}
+            size={size}
+            color={n <= value ? energia : controleBorda}
+            accessible={false}
+          />
+        </Pressable>
+      ))}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  starWrap: {
-    padding: 2,
-  },
-});

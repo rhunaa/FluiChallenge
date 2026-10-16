@@ -1,11 +1,10 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
-import { Texto as Text } from './Texto';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInRight } from 'react-native-reanimated';
-import { radius, shadow, spacing, typography } from '../tema/tema';
-import { usarTema } from '../contexto/ContextoTema';
+import { Texto } from './Texto';
 import { LocalProximo, ROTULOS_COMODIDADE } from '../tipos';
+import { usarCoresTela } from './AssinaturaFlui';
 
 const ICONE_CATEGORIA: Record<LocalProximo['category'], keyof typeof Ionicons.glyphMap> = {
   cafe: 'cafe-outline',
@@ -13,80 +12,24 @@ const ICONE_CATEGORIA: Record<LocalProximo['category'], keyof typeof Ionicons.gl
   shopping: 'bag-outline',
 };
 
-interface CartaoLocalProximoProps {
-  local: LocalProximo;
-  index?: number;
-}
-
-export function CartaoLocalProximo({ local, index = 0 }: CartaoLocalProximoProps) {
-  const { colors } = usarTema();
-  const styles = criarEstilos(colors);
-
+/* Local proximo sem foto generica: bloco com o icone da categoria, no estilo dos cartoes r7. */
+export function CartaoLocalProximo({ local, index = 0 }: { local: LocalProximo; index?: number }) {
+  const { cartao, bordaCartao } = usarCoresTela();
   return (
-    <Animated.View
-      entering={FadeInRight.delay(index * 70).springify().damping(16)}
-      style={[styles.card, shadow.card]}
-      accessible
-      accessibilityLabel={`${local.name}, ${ROTULOS_COMODIDADE[local.category]}, a ${local.walkMin} minutos a pé, avaliação ${local.rating.toFixed(1)}`}
-    >
-      <Image source={{ uri: local.imageUrl }} style={styles.thumb} accessibilityIgnoresInvertColors />
-      <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1} allowFontScaling>
-          {local.name}
-        </Text>
-        <View style={styles.metaRow}>
-          <Ionicons name={ICONE_CATEGORIA[local.category]} size={12} color={colors.textSecondary} />
-          <Text style={styles.metaText} numberOfLines={1} allowFontScaling>
-            {ROTULOS_COMODIDADE[local.category]}
-          </Text>
-        </View>
-        <View style={styles.metaRow}>
-          <Ionicons name="walk-outline" size={12} color={colors.textSecondary} />
-          <Text style={styles.metaText} allowFontScaling>
-            {local.walkMin} min
-          </Text>
-          <Ionicons name="star" size={12} color={colors.warning} style={styles.starIcon} />
-          <Text style={styles.metaText} allowFontScaling>
-            {local.rating.toFixed(1)}
-          </Text>
+    <Animated.View entering={FadeInRight.delay(index * 70).duration(240)} accessible accessibilityLabel={`${local.name}, ${ROTULOS_COMODIDADE[local.category]}, a ${local.walkMin} minutos a pé, avaliação ${local.rating.toFixed(1)}`} style={{ width: 160, marginRight: 12, borderRadius: 24, overflow: 'hidden', backgroundColor: cartao, borderWidth: 1, borderColor: bordaCartao }}>
+      <View style={{ height: 90, backgroundColor: '#E6DCFF', alignItems: 'center', justifyContent: 'center' }}>
+        <Ionicons name={ICONE_CATEGORIA[local.category]} size={28} color="#5B2BBF" />
+      </View>
+      <View style={{ padding: 12, gap: 4 }}>
+        <Texto numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: '#1B1A20' }}>{local.name}</Texto>
+        <Texto numberOfLines={1} style={{ fontSize: 11, color: '#4E4C58' }}>{ROTULOS_COMODIDADE[local.category]}</Texto>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Ionicons name="walk-outline" size={12} color="#4E4C58" />
+          <Texto style={{ fontSize: 11, color: '#4E4C58' }}>{`${local.walkMin} min`}</Texto>
+          <Ionicons name="star" size={12} color="#8A5300" style={{ marginLeft: 6 }} />
+          <Texto style={{ fontSize: 11, color: '#4E4C58' }}>{local.rating.toFixed(1)}</Texto>
         </View>
       </View>
     </Animated.View>
   );
 }
-
-const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) =>
-  StyleSheet.create({
-    card: {
-      width: 160,
-      backgroundColor: colors.surface,
-      borderRadius: radius.lg,
-      overflow: 'hidden',
-      marginRight: spacing.md,
-    },
-    thumb: {
-      width: '100%',
-      height: 90,
-      backgroundColor: colors.surfaceMuted,
-    },
-    info: {
-      padding: spacing.sm,
-    },
-    name: {
-      ...typography.bodyMedium,
-      fontSize: 13,
-    },
-    metaRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      marginTop: 4,
-    },
-    metaText: {
-      ...typography.small,
-      color: colors.textSecondary,
-    },
-    starIcon: {
-      marginLeft: 6,
-    },
-  });

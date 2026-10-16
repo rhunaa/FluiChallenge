@@ -1,187 +1,78 @@
 import React, { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { Texto as Text } from '../componentes/Texto';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeIn } from 'react-native-reanimated';
-import { gradients, radius, spacing, typography } from '../tema/tema';
-import { usarTema } from '../contexto/ContextoTema';
-import { buscarEstacaoPorId } from '../dados/estacoes';
 import { usarAvaliacoes } from '../contexto/ContextoAvaliacoes';
+import { usarAutenticacao } from '../contexto/ContextoAutenticacao';
+import { buscarEstacaoPorId } from '../dados/estacoes';
 import { CartaoAvaliacao } from '../componentes/CartaoAvaliacao';
+import { Texto } from '../componentes/Texto';
+import { Numero, Overline, Palco, Secao } from '../componentes/AssinaturaFlui';
+import { Pagina, Botao, Opcao, Vazio, AvisoDemo, linha } from '../componentes/Interface';
 
-const TABS = [
-  { key: 'feed', label: 'Feed' },
-  { key: 'mine', label: 'Meus feedbacks' },
-] as const;
-
-export default function TelaComunidade() {
-  const navigation = useNavigation<any>();
-  const { colors } = usarTema();
-  const styles = criarEstilos(colors);
-  const { reviews } = usarAvaliacoes();
-  const [tab, setTab] = useState<(typeof TABS)[number]['key']>('feed');
-
-  const visibleReviews = tab === 'feed' ? reviews : reviews.filter((r) => r.authorName === 'Você');
-
+/* Comunidade r7: palco com o número de relatos e a chamada; Feed | Meus feedbacks sobre o fundo vivo. */
+export function TelaComunidade() {
+  const nav = useNavigation<any>(),
+    { reviews } = usarAvaliacoes(),
+    { usuario } = usarAutenticacao(),
+    [mine, setMine] = useState(false),
+    list = mine ? reviews.filter((r) => r.authorId === usuario?.id) : reviews;
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={gradients.hero} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <Text style={styles.title} accessibilityRole="header" allowFontScaling>
-            Comunidade
-          </Text>
-          <Text style={styles.subtitle} allowFontScaling>
-            Avalie, veja e compartilhe experiências sobre os postos de recarga
-          </Text>
-
-          <View style={styles.tabsRow} accessibilityRole="tablist">
-            {TABS.map((t) => {
-              const active = tab === t.key;
-              return (
-                <Pressable
-                  key={t.key}
-                  onPress={() => setTab(t.key)}
-                  style={[styles.tab, active && styles.tabActive]}
-                  accessibilityRole="tab"
-                  accessibilityLabel={t.label}
-                  accessibilityState={{ selected: active }}
-                >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]} allowFontScaling>
-                    {t.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Pressable
-            onPress={() => navigation.getParent()?.navigate('ReportExperience')}
-            style={styles.composer}
-            accessibilityRole="button"
-            accessibilityLabel="Contar como foi sua experiência em um posto"
-          >
-            <Text style={styles.composerText} allowFontScaling>
-              Como foi sua experiência?
-            </Text>
-            <View style={styles.composerButton}>
-              <Ionicons name="flash" size={16} color={colors.onPrimary} />
-            </View>
-          </Pressable>
-        </SafeAreaView>
-      </LinearGradient>
-
-      <FlatList
-        data={visibleReviews}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => (
-          <CartaoAvaliacao
-            review={item}
-            station={buscarEstacaoPorId(item.stationId)}
-            index={index}
-            onPressStation={() => navigation.getParent()?.navigate('StationDetail', { stationId: item.stationId })}
+    <Pagina title="Comunidade Flui" subtitle="Sua experiência ajuda quem vem depois.">
+      <Palco>
+        <Overline>VOZES DA COMUNIDADE</Overline>
+        <View style={{ marginTop: 10 }}>
+          <Numero
+            valor={String(reviews.length)}
+            unidade={reviews.length === 1 ? 'avaliação' : 'avaliações'}
           />
-        )}
-        ListEmptyComponent={
-          <Animated.View entering={FadeIn} style={styles.emptyState}>
-            <Ionicons name="chatbubbles-outline" size={26} color={colors.textMuted} />
-            <Text style={styles.emptyText} allowFontScaling>
-              Você ainda não publicou nenhuma experiência.
-            </Text>
-          </Animated.View>
-        }
+        </View>
+        <Texto style={{ fontSize: 14, lineHeight: 20, color: '#A9A6B8', marginTop: 6, marginBottom: 14 }}>
+          Uma boa dica muda a próxima parada. Como foi sua recarga?
+        </Texto>
+        <Botao
+          label="Contar minha experiência"
+          icon="create-outline"
+          onPress={() => nav.navigate('ReportExperience')}
+        />
+      </Palco>
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel="Feed ou meus feedbacks"
+        style={linha}
+      >
+        <Opcao kind="radio" label="Feed" selected={!mine} onPress={() => setMine(false)} />
+        <Opcao
+          kind="radio"
+          label="Meus feedbacks"
+          selected={mine}
+          onPress={() => setMine(true)}
+        />
+      </View>
+      <Secao
+        titulo={mine ? 'Seus relatos' : 'Relatos do cenário'}
+        sub={`${list.length} ${list.length === 1 ? 'relato' : 'relatos'}`}
       />
-    </View>
+      {list.length ? (
+        list.map((r) => (
+          <CartaoAvaliacao
+            key={r.id}
+            review={r}
+            station={buscarEstacaoPorId(r.stationId)}
+            onPressStation={() => nav.navigate('StationDetail', { stationId: r.stationId })}
+          />
+        ))
+      ) : (
+        <Vazio
+          titulo="Você ainda não avaliou um posto"
+          descricao="Seu feedback aparece nesta sessão com seu apelido, sem confundir autores pelo nome."
+          acao={{
+            label: 'Contar minha experiência',
+            onPress: () => nav.navigate('ReportExperience'),
+          }}
+        />
+      )}
+      <AvisoDemo />
+    </Pagina>
   );
 }
-
-const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-    borderBottomLeftRadius: radius.xl,
-    borderBottomRightRadius: radius.xl,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.textOnGradient,
-    marginTop: spacing.sm,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textOnGradientMuted,
-    marginTop: 2,
-    marginBottom: spacing.lg,
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderRadius: radius.pill,
-    padding: 4,
-    marginBottom: spacing.md,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-  },
-  tabActive: {
-    backgroundColor: colors.surface,
-  },
-  tabText: {
-    ...typography.caption,
-    color: colors.textOnGradientMuted,
-    fontWeight: '700',
-  },
-  tabTextActive: {
-    color: colors.primaryDark,
-  },
-  composer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: radius.pill,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingLeft: spacing.lg,
-  },
-  composerText: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  composerButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  list: {
-    padding: spacing.lg,
-    paddingBottom: 140,
-    width: '100%',
-    maxWidth: 560,
-    alignSelf: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.xl,
-  },
-  emptyText: {
-    ...typography.caption,
-    color: colors.textOnDarkMuted,
-    textAlign: 'center',
-  },
-});
+export default TelaComunidade;

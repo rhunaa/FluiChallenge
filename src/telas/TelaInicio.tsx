@@ -1,281 +1,95 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Texto as Text } from '../componentes/Texto';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { Pressable } from 'react-native';
-import { gradients, radius, spacing, typography } from '../tema/tema';
-import { usarTema } from '../contexto/ContextoTema';
-import { estacoes, buscarEstacaoPorId } from '../dados/estacoes';
-import { CartaoEstacao } from '../componentes/CartaoEstacao';
-import { usarReservas } from '../contexto/ContextoReservas';
 import { usarAutenticacao } from '../contexto/ContextoAutenticacao';
+import { usarFiltros } from '../contexto/ContextoFiltro';
+import { usarReservas } from '../contexto/ContextoReservas';
+import { usarFavoritos } from '../contexto/ContextoFavoritos';
+import { estacoes } from '../dados/estacoes';
+import { aplicarFiltros } from '../utilitarios/filtrarEstacoes';
+import { Pagina, Papel, Titulo, Corpo, Botao, Vazio, AvisoDemo, IconeBotao } from '../componentes/Interface';
+import { Texto } from '../componentes/Texto';
+import { CartaoEstacao } from '../componentes/CartaoEstacao';
+import { AtalhoFlui } from '../componentes/PaineisFlui';
+import { CarroPalco, Faixa, Numero, Overline, Palco, Secao, Segmentos, SeparadorFaixa } from '../componentes/AssinaturaFlui';
 
-function formatarHora(h: number): string {
-  return `${String(h).padStart(2, '0')}h`;
-}
+const atalhos = [
+  { label: 'Planejar minha viagem', description: 'Monte suas paradas', icon: 'navigate-outline', route: 'TripPlanner' },
+  { label: 'Contar experiência', description: 'Ajude quem vem depois', icon: 'chatbubbles-outline', route: 'ReportExperience' },
+  { label: 'Meus lugares salvos', description: 'Volte aos seus favoritos', icon: 'bookmark-outline', route: 'Favorites' },
+  { label: 'Acessibilidade', description: 'Ajuste o Flui para você', icon: 'accessibility-outline', route: 'Accessibility' },
+] as const;
 
-export default function TelaInicio() {
-  const navigation = useNavigation<any>();
-  const { colors } = usarTema();
-  const styles = criarEstilos(colors);
-  const featured = estacoes.filter((s) => s.status === 'available').slice(0, 3);
-  const { reservas } = usarReservas();
-  const reservaAtiva = Object.values(reservas)[0];
-  const estacaoReservada = reservaAtiva ? buscarEstacaoPorId(reservaAtiva.stationId) : undefined;
+/* Inicio da prancha r7: palco com o carro, faixa de leitura, segmentos e a proxima parada. */
+export function TelaInicio() {
+  const nav = useNavigation<any>();
   const { usuario } = usarAutenticacao();
-  const primeiroNome = usuario?.name?.split(' ')[0] ?? 'motorista';
-
+  const { filters } = usarFiltros();
+  const { reservas } = usarReservas();
+  const { ehFavorito } = usarFavoritos();
+  const visible = aplicarFiltros(estacoes, filters, usuario?.tipoConector);
+  const fav = visible.filter((s) => ehFavorito(s.id));
+  const first = (fav.length ? fav : visible).slice(0, 2);
+  const bateria = usuario?.batteryPercent || 0;
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
-          <View style={styles.headerText}>
-            <Text style={styles.greeting} allowFontScaling>
-              Olá, {primeiroNome}
-            </Text>
-            <Text style={styles.title} allowFontScaling>
-              Para onde vamos hoje?
-            </Text>
+    <Pagina title={`Olá, ${usuario?.name.split(' ')[0] || 'Visitante'}!`} subtitle="Seu caminho, sua energia." clima="inicio">
+      <Palco testID="flui-hero">
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Overline>Meu veículo</Overline>
+            <Texto style={{ fontSize: 21, fontWeight: '600', letterSpacing: -0.3, color: '#EEEDF8', marginTop: 3 }}>{usuario?.carModel?.replace(' · exemplo', '')}</Texto>
+            <Texto style={{ fontSize: 12, color: '#A9A6B8', marginTop: 1 }}>{usuario?.tipoConector} · perfil do cenário</Texto>
           </View>
-          <Pressable
-            onPress={() => navigation.getParent()?.navigate('Accessibility')}
-            style={styles.avatar}
-            accessibilityRole="button"
-            accessibilityLabel="Abrir acessibilidade"
-          >
-            <Ionicons name="settings-outline" size={20} color={colors.onPrimary} />
-          </Pressable>
-        </Animated.View>
-
-        {estacaoReservada && reservaAtiva && (
-          <Animated.View entering={FadeInDown.delay(60).duration(400)}>
-            <Pressable
-              onPress={() => navigation.navigate('StationDetail', { stationId: estacaoReservada.id })}
-              style={styles.reservaBanner}
-              accessibilityRole="button"
-              accessibilityLabel={`Reserva às ${formatarHora(reservaAtiva.startHour)} em ${estacaoReservada.name}`}
-              accessibilityHint="Toque para ver a ficha do posto reservado"
-            >
-              <Ionicons name="calendar" size={16} color={colors.primary} />
-              <Text style={styles.reservaBannerText} allowFontScaling numberOfLines={1}>
-                Reserva às {formatarHora(reservaAtiva.startHour)} em {estacaoReservada.name}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-            </Pressable>
-          </Animated.View>
-        )}
-
-        <Animated.View entering={FadeInUp.delay(100).duration(450)}>
-          <LinearGradient colors={gradients.hero} style={styles.hero}>
-            <View style={styles.heroIconRing}>
-              <Ionicons name="flash" size={26} color={colors.onPrimary} />
+          <IconeBotao variante="palco" icon="options-outline" label="Editar meu veículo" onPress={() => nav.navigate('Profile')} />
+        </View>
+        <CarroPalco />
+        <Faixa>
+          <View style={{ flexShrink: 1, minWidth: 0 }}>
+            <Overline espaco={1}>Autonomia informada</Overline>
+            <View style={{ marginTop: 4 }}>
+              <Numero valor={String(usuario?.autonomiaKm ?? '—')} unidade=" km" />
             </View>
-            <Text style={styles.heroTitle} allowFontScaling>
-              Encontre pontos de recarga por perto
-            </Text>
-            <Text style={styles.heroSubtitle} allowFontScaling>
-              {estacoes.length} estações mapeadas na sua região agora
-            </Text>
-            <Pressable
-              onPress={() => navigation.navigate('Map')}
-              style={styles.heroButton}
-              accessibilityRole="button"
-              accessibilityLabel="Ver mapa de pontos de recarga"
-            >
-              <Text style={styles.heroButtonText} allowFontScaling>
-                Ver mapa
-              </Text>
-              <Ionicons name="arrow-forward" size={16} color={colors.primaryDark} />
-            </Pressable>
-          </LinearGradient>
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(140).duration(450)}>
-          <Pressable
-            onPress={() => navigation.navigate('TripPlanner')}
-            style={styles.tripPlannerCard}
-            accessibilityRole="button"
-            accessibilityLabel="Planejar viagem"
-            accessibilityHint="Calcula paradas de recarga para uma viagem mais longa"
-          >
-            <View style={styles.tripPlannerIcon}>
-              <Ionicons name="navigate-circle-outline" size={26} color={colors.onPrimary} />
+          </View>
+          <SeparadorFaixa />
+          <View style={{ flexShrink: 1, minWidth: 0, alignItems: 'flex-end' }}>
+            <Overline espaco={1} style={{ textAlign: 'right' }}>Bateria · ilustrativa</Overline>
+            <View style={{ marginTop: 4 }}>
+              <Numero valor={String(bateria)} unidade=" %" />
             </View>
-            <View style={styles.tripPlannerInfo}>
-              <Text style={styles.tripPlannerTitle} allowFontScaling>
-                Planejar viagem
-              </Text>
-              <Text style={styles.tripPlannerSubtitle} allowFontScaling numberOfLines={1}>
-                Calcule as paradas de recarga do seu trajeto
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-          </Pressable>
-        </Animated.View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle} accessibilityRole="header" allowFontScaling>
-            Postos em destaque
-          </Text>
-          <Pressable onPress={() => navigation.navigate('Map')} accessibilityRole="button" accessibilityLabel="Ver todos os postos no mapa">
-            <Text style={styles.link} allowFontScaling>
-              Ver todos
-            </Text>
+          </View>
+        </Faixa>
+        <Segmentos cheios={Math.round(bateria * 0.24)} />
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 2 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Botao label="Encontrar recarga" icon="flash" onPress={() => nav.navigate('Filters')} />
+          </View>
+          <Pressable accessibilityRole="button" accessibilityLabel="Explorar mapa" onPress={() => nav.navigate('Map')} style={({ pressed }) => ({ width: 50, height: 50, borderRadius: 16, backgroundColor: '#EEEDF8', alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1 })}>
+            <Ionicons name="map-outline" size={22} color="#242428" />
           </Pressable>
         </View>
-
-        {featured.map((station, i) => (
-          <CartaoEstacao
-            key={station.id}
-            station={station}
-            index={i}
-            onPress={() => navigation.getParent()?.navigate('StationDetail', { stationId: station.id })}
-          />
+      </Palco>
+      <Secao titulo="Sua próxima parada." sub={`${visible.length} postos combinam com seus filtros`} acao={{ label: 'Ver todos →', nome: 'Ver todos os postos', onPress: () => nav.navigate('Filters') }} />
+      {first.map((s) => (
+        <CartaoEstacao key={s.id} station={s} onPress={() => nav.navigate('StationDetail', { stationId: s.id })} />
+      ))}
+      {!first.length ? <Vazio titulo="Nenhum posto nestes filtros" descricao="Revise o conector, a potência ou a disponibilidade." acao={{ label: 'Ajustar filtros', onPress: () => nav.navigate('Filters') }} /> : null}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+        {atalhos.map((a) => (
+          <View key={a.route} style={{ width: '47%', flexGrow: 1, minWidth: 140 }}>
+            <AtalhoFlui label={a.label} description={a.description} icon={a.icon} onPress={() => nav.navigate(a.route)} />
+          </View>
         ))}
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+      {Object.keys(reservas).length > 0 ? (
+        <Papel>
+          <Titulo onCard>Seu próximo horário está aqui</Titulo>
+          <Corpo>Consulte ou altere seu planejamento. Ele não garante uma vaga no posto.</Corpo>
+          <Botao variant="secondary" label="Ver meus horários" onPress={() => nav.navigate('Profile')} />
+        </Papel>
+      ) : null}
+      <AvisoDemo />
+    </Pagina>
   );
 }
-
-const criarEstilos = (colors: ReturnType<typeof usarTema>['colors']) => StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: 140,
-    width: '100%',
-    maxWidth: 560,
-    alignSelf: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  headerText: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  greeting: {
-    ...typography.caption,
-    color: colors.textOnDarkMuted,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.textOnDark,
-    marginTop: 2,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  reservaBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.pill,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  reservaBannerText: {
-    ...typography.caption,
-    color: colors.primaryDark,
-    fontWeight: '700',
-    flex: 1,
-  },
-  hero: {
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    marginBottom: spacing.xl,
-  },
-  heroIconRing: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  heroTitle: {
-    ...typography.h2,
-    color: colors.textOnGradient,
-    marginBottom: spacing.xs,
-  },
-  heroSubtitle: {
-    ...typography.body,
-    color: colors.textOnGradientMuted,
-    marginBottom: spacing.lg,
-  },
-  heroButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.pill,
-    gap: 6,
-  },
-  heroButtonText: {
-    ...typography.bodyMedium,
-    color: colors.primaryDark,
-  },
-  tripPlannerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
-  },
-  tripPlannerIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  tripPlannerInfo: {
-    flex: 1,
-    marginRight: spacing.sm,
-  },
-  tripPlannerTitle: {
-    ...typography.h3,
-  },
-  tripPlannerSubtitle: {
-    ...typography.caption,
-    marginTop: 2,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.textOnDark,
-  },
-  link: {
-    ...typography.caption,
-    color: colors.accent,
-    fontWeight: '700',
-  },
-});
+export default TelaInicio;

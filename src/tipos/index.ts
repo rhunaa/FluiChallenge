@@ -1,27 +1,16 @@
 export type TipoConector = 'CCS Combo2' | 'CHAdeMO' | 'Tipo 2' | 'Tesla NACS';
-
 export type StatusEstacao = 'available' | 'busy' | 'offline';
-
 export interface Conector {
   id: string;
   type: TipoConector;
   powerKw: number;
   status: StatusEstacao;
 }
-
-export type ChaveComodidade =
-  | 'wifi'
-  | 'cafe'
-  | 'restroom'
-  | 'shopping'
-  | 'food'
-  | 'parking';
-
+export type ChaveComodidade = 'wifi' | 'cafe' | 'restroom' | 'shopping' | 'food' | 'parking';
 export interface Comodidade {
   key: ChaveComodidade;
   label: string;
 }
-
 export interface Estacao {
   id: string;
   name: string;
@@ -29,6 +18,8 @@ export interface Estacao {
   distanceKm: number;
   status: StatusEstacao;
   imageUrl: string;
+  /** Set only after matching this actual address to its Google place. */
+  googlePlaceId?: string;
   x: number;
   y: number;
   lat: number;
@@ -39,15 +30,17 @@ export interface Estacao {
   is24h: boolean;
   rating: number;
   hourlyOccupancy: number[];
+  demoRouteKm?: number;
+  demoTariffPerKwh?: number;
 }
-
 export interface EstadoFiltro {
   connectorTypes: TipoConector[];
   minPower: number | null;
   amenities: ChaveComodidade[];
   hoursMode: 'any' | '24h' | 'commercial';
+  onlyAvailable?: boolean;
+  compatibleOnly?: boolean;
 }
-
 export interface CategoriasAvaliacao {
   availability: number;
   queue: number;
@@ -55,26 +48,27 @@ export interface CategoriasAvaliacao {
   comfort: number;
   value: number;
 }
-
 export interface Avaliacao {
   id: string;
   stationId: string;
   authorName: string;
+  authorId?: string;
   mood: number;
   ratings: CategoriasAvaliacao;
   comment: string;
   createdAt: string;
   comments: number;
 }
-
-export const ROTULOS_CATEGORIA_AVALIACAO: Record<keyof CategoriasAvaliacao, { label: string; hint: string }> = {
+export const ROTULOS_CATEGORIA_AVALIACAO: Record<
+  keyof CategoriasAvaliacao,
+  { label: string; hint: string }
+> = {
   availability: { label: 'Disponibilidade', hint: 'Fácil encontrar um carregador livre?' },
   queue: { label: 'Fila / Espera', hint: 'Quanto tempo você esperou na fila?' },
   speed: { label: 'Velocidade de recarga', hint: 'A recarga foi tão rápida quanto esperado?' },
   comfort: { label: 'Conforto do local', hint: 'Espaço limpo, seguro e agradável?' },
   value: { label: 'Preço / Custo-benefício', hint: 'O preço cobrado valeu a pena?' },
 };
-
 export interface SessaoRecarga {
   id: string;
   stationId: string;
@@ -84,7 +78,6 @@ export interface SessaoRecarga {
   energyKwh: number;
   cost: number;
 }
-
 export const ROTULOS_COMODIDADE: Record<ChaveComodidade, string> = {
   wifi: 'Wi-Fi',
   cafe: 'Café',
@@ -93,9 +86,7 @@ export const ROTULOS_COMODIDADE: Record<ChaveComodidade, string> = {
   food: 'Praça de alimentação',
   parking: 'Estacionamento',
 };
-
 export type CategoriaLocalProximo = 'cafe' | 'food' | 'shopping';
-
 export interface LocalProximo {
   id: string;
   name: string;

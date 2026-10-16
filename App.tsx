@@ -1,58 +1,48 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Platform, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { DarkTheme, NavigationContainer } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
-import { Texto } from './src/componentes/Texto';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { ProvedorTema, usarTema } from './src/contexto/ContextoTema';
 import { ProvedorFiltro } from './src/contexto/ContextoFiltro';
 import { ProvedorFavoritos } from './src/contexto/ContextoFavoritos';
 import { ProvedorAvaliacoes } from './src/contexto/ContextoAvaliacoes';
 import { ProvedorReservas } from './src/contexto/ContextoReservas';
-import { ProvedorAutenticacao } from './src/contexto/ContextoAutenticacao';
+import { ProvedorViagem } from './src/contexto/ContextoViagem';
+import {
+  ProvedorAutenticacao,
+  usarAutenticacao,
+} from './src/contexto/ContextoAutenticacao';
+import { instalarAcessibilidadeWeb } from './src/utilitarios/acessibilidadeWeb';
 import { RootNavigator } from './src/navegacao/RootNavigator';
-
-function SplashScreen() {
-  const { colors } = usarTema();
-  const scale = useSharedValue(0.9);
-
-  useEffect(() => {
-    scale.value = withRepeat(withSequence(withTiming(1.06, { duration: 700 }), withTiming(0.94, { duration: 700 })), -1, true);
-  }, []);
-
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-
-  return (
-    <Animated.View
-      entering={FadeIn}
-      style={[styles.splash, { backgroundColor: colors.background }]}
-      accessibilityLabel="Carregando Flui"
-    >
-      <Animated.View style={[styles.splashBadge, { backgroundColor: colors.primary }, style]}>
-        <Ionicons name="flash" size={36} color={colors.onPrimary} />
-      </Animated.View>
-      <Texto style={[styles.splashTitle, { color: colors.textOnDark }]}>Flui</Texto>
-      <Texto style={[styles.splashSubtitle, { color: colors.textOnDarkMuted }]}>Recarregue com facilidade</Texto>
-    </Animated.View>
-  );
-}
-
 function ConteudoApp() {
   const { colors, modo } = usarTema();
-  const [ready, setReady] = useState(false);
-
   useEffect(() => {
-    const t = setTimeout(() => setReady(true), 1100);
-    return () => clearTimeout(t);
+    if (Platform.OS !== 'web') return;
+    const doc = (globalThis as any).document;
+    if (!doc?.documentElement) return;
+    doc.documentElement.style.backgroundColor = colors.background;
+    if (doc.body) doc.body.style.backgroundColor = colors.background;
+  }, [colors.background]);
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const doc = (globalThis as any).document;
+    if (!doc) return;
+    doc.title = 'Flui · Energia em movimento';
+    doc.documentElement.lang = 'pt-BR';
+    const el = doc.createElement('style');
+    el.textContent =
+      '[role=button],[role=checkbox],[role=radio],[role=tab]{transition:transform 140ms ease,background-color 140ms ease,opacity 140ms ease}[role=button]:hover{filter:brightness(1.02)}@keyframes flui-fundo{from{opacity:0}to{opacity:1}}[data-testid=flui-fundo]{animation:flui-fundo 600ms ease-out both}[data-testid=flui-hero]{animation:flui-enter 320ms cubic-bezier(.2,.8,.2,1) both}@keyframes flui-enter{from{opacity:.3;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}*:focus-visible{outline:3px solid #8B4DF0!important;outline-offset:3px!important}[id^="campo-caixa-"]:focus-within{outline:3px solid #8B4DF0;outline-offset:3px}[id^="campo-caixa-"] input:focus-visible,[id^="campo-caixa-"] textarea:focus-visible{outline:none!important}h1:focus,h2:focus,h3:focus,[role=heading]:focus{outline:none!important}input::placeholder,textarea::placeholder{opacity:1}html,body,#root{height:100%;margin:0}*{scroll-behavior:auto}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}';
+    doc.head.appendChild(el);
+    const limparAcessibilidade = instalarAcessibilidadeWeb();
+    return () => { limparAcessibilidade(); el.remove(); };
   }, []);
-
-  const navigationTheme = {
-    ...DarkTheme,
+  const base = modo === 'dark' ? DarkTheme : DefaultTheme;
+  const theme = {
+    ...base,
     colors: {
-      ...DarkTheme.colors,
+      ...base.colors,
       background: colors.background,
       card: colors.background,
       primary: colors.primary,
@@ -60,63 +50,41 @@ function ConteudoApp() {
       border: colors.border,
     },
   };
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={modo === 'dark' ? 'light' : 'dark'} />
-      {ready ? (
-        <ProvedorFiltro>
-          <ProvedorFavoritos>
-            <ProvedorAvaliacoes>
-              <ProvedorReservas>
-                <NavigationContainer theme={navigationTheme}>
+      <ProvedorFiltro>
+        <ProvedorFavoritos>
+          <ProvedorAvaliacoes>
+            <ProvedorReservas>
+              <ProvedorViagem>
+                <NavigationContainer theme={theme}>
                   <RootNavigator />
                 </NavigationContainer>
-              </ProvedorReservas>
-            </ProvedorAvaliacoes>
-          </ProvedorFavoritos>
-        </ProvedorFiltro>
-      ) : (
-        <SplashScreen />
-      )}
+              </ProvedorViagem>
+            </ProvedorReservas>
+          </ProvedorAvaliacoes>
+        </ProvedorFavoritos>
+      </ProvedorFiltro>
     </View>
   );
 }
-
+function Sessao() {
+  const { sessaoId } = usarAutenticacao();
+  return (
+    <ProvedorTema key={sessaoId}>
+      <ConteudoApp />
+    </ProvedorTema>
+  );
+}
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ProvedorTema>
-          <ProvedorAutenticacao>
-            <ConteudoApp />
-          </ProvedorAutenticacao>
-        </ProvedorTema>
+        <ProvedorAutenticacao>
+          <Sessao />
+        </ProvedorAutenticacao>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  splash: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  splashBadge: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  splashTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  splashSubtitle: {
-    fontSize: 14,
-    marginTop: 4,
-  },
-});
